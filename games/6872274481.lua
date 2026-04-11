@@ -38817,7 +38817,7 @@ run(function()
     local HitFix
 	local PingBased
 	local Options
-    HitFix = vape.Categories.Blatant:CreateModule({
+    HitFix = vape.Categories.Legit:CreateModule({
         Name = 'BETTER HITFIX',
         Function = function(callback)
             if role ~= "owner" and role ~= "coowner" and role ~= "admin" and role ~= "friend" and role ~= "premium" then
