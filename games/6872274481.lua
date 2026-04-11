@@ -22153,58 +22153,7 @@ run(function()
 				weaponCheckCounter = 0
 			end
 		end,
-		Tooltip = 'Mine/build through players and NPCs'
-	})
-end)
-
-run(function()
-	local InfiniteJump
-	local Mode
-	local jumps = 0
-	
-	InfiniteJump = vape.Categories.Blatant:CreateModule({
-		Name = "InfiniteJump",
-		Tooltip = "jumpjumpjump",
-		Function = function(callback)
-			if callback then
-				jumps = 0
-				
-				InfiniteJump:Clean(runService.Heartbeat:Connect(function()
-					if entitylib.isAlive then
-						local humanoid = entitylib.character.Humanoid
-						if humanoid.FloorMaterial and humanoid.FloorMaterial ~= Enum.Material.Air then
-							jumps = 0
-						end
-					end
-				end))
-				
-				InfiniteJump:Clean(inputService.JumpRequest:Connect(function()
-					if not entitylib.isAlive then return end
-					
-					jumps += 1
-					
-					if Mode.Value == "Velocity" then
-						if jumps > 1 then
-							local power = math.sqrt(2 * workspace.Gravity * entitylib.character.Humanoid.JumpHeight)
-							entitylib.character.RootPart.Velocity = Vector3.new(entitylib.character.RootPart.Velocity.X, power, entitylib.character.RootPart.Velocity.Z)
-						end
-					elseif Mode.Value == "Jump" then
-						if jumps > 1 then
-							entitylib.character.Humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
-						end
-					end
-				end))
-			end
-		end,
-		ExtraText = function() return Mode.Value end
-	})
-	
-	Mode = InfiniteJump:CreateDropdown({
-		Name = "Mode",
-		List = {"Jump", "Velocity"},
-		Default = "Velocity"
-	})
-end)
+		Tooltip = 'Mine/build through ppl
 
 run(function()
 	local ShadowRemover
