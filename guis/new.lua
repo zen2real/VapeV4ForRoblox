@@ -5803,12 +5803,7 @@ mainapi:CreateCategory({
     Size = UDim2.fromOffset(18, 18)
 })
 mainapi:CreateCategory({
-    Name = 'Exploits',
-    Icon = getcustomasset('newvape/assets/new/youricon.png'),
-    Size = UDim2.fromOffset(18, 18)
-})
-mainapi:CreateCategory({
-    Name = 'legit',
+    Name = 'boostFPS',
     Icon = getcustomasset('newvape/assets/new/youricon.png'),
     Size = UDim2.fromOffset(18, 18)
 })
