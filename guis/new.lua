@@ -5807,6 +5807,11 @@ mainapi:CreateCategory({
     Icon = getcustomasset('newvape/assets/new/youricon.png'),
     Size = UDim2.fromOffset(18, 18)
 })
+mainapi:CreateCategory({
+    Name = 'legit',
+    Icon = getcustomasset('newvape/assets/new/youricon.png'),
+    Size = UDim2.fromOffset(18, 18)
+})
 mainapi.Categories.Main:CreateDivider('misc')
 
 --[[
