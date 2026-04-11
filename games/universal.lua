@@ -7104,7 +7104,7 @@ run(function()
 	local Color
 	local hat
 	
-	ChinaHat = vape.Render:CreateModule({
+	ChinaHat = vape.legit:CreateModule({
 		Name = 'China Hat',
 		Function = function(callback)
 			if callback then
