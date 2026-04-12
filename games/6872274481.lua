@@ -22721,13 +22721,15 @@ run(function()
 							elseif method == 'AntiCheat' then
 								local spot = nfFindSpot(root.Position)
 								if spot and isnetworkowner(entitylib.character.RootPart) then
+									local anchorTime = math.clamp(fallHeight / 4, 1.5, 4.5)
 									lplr.Character.HumanoidRootPart.Anchored = true
-									task.wait(2.8)
+									task.wait(anchorTime)
 									lplr.Character.HumanoidRootPart.Anchored = false
-									task.wait(.15)
-									if lplr.Character.HumanoidRootPart.Anchored == true then
+									task.wait(0.1)
+									if lplr.Character.HumanoidRootPart.Anchored then
 										lplr.Character.HumanoidRootPart.Anchored = false
 									end
+									root.AssemblyLinearVelocity = Vector3.zero
 								end
 
 							end
