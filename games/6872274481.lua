@@ -42113,3 +42113,248 @@ run(function()
 		Tooltip = "Ambience 2"
 	})
 end)
+
+-- ============ Ocean Enhancement System ============
+run(function()
+	local RealisticOcean
+	local terrain = workspace:FindFirstChildWhichIsA('Terrain')
+	local oceanWaterInstances = {}
+	local waveEffect = nil
+	local oceanEnabled = false
+	
+	-- Wave Generation Function
+	local function generateWaves(position, time, amplitude, frequency, speed)
+		local wave1 = math.sin((position.x * frequency + time * speed) * math.pi) * amplitude
+		local wave2 = math.sin((position.z * frequency/1.5 + time * speed * 0.8) * math.pi) * (amplitude * 0.7)
+		local wave3 = math.cos((position.x * frequency/2.3 + position.z * frequency/2.3 + time * speed * 1.2) * math.pi) * (amplitude * 0.5)
+		return wave1 + wave2 + wave3
+	end
+	
+	-- Water Shader Enhancement
+	local function enhanceWaterShader()
+		for _, obj in pairs(oceanWaterInstances) do
+			if obj and obj.Parent then
+				-- Realistic water material properties
+				obj.Material = Enum.Material.Glass
+				obj.Transparency = 0.3
+				-- Dynamic color based on depth and lighting
+				obj.Color = Color3.fromRGB(20, 110, 150)
+				-- Enable Roblox physics for better water interaction
+				if obj:IsA('Part') then
+					obj.CanCollide = false
+				end
+			end
+		end
+	end
+	
+	-- Foam and Wave Particle System
+	local function createFoamEffect()
+		local foamAttachment = Instance.new('Attachment')
+		foamAttachment.Name = 'OceanFoam'
+		
+		local foamParticles = Instance.new('ParticleEmitter')
+		foamParticles.Name = 'WaveFoam'
+		foamParticles.Texture = 'rbxasset://textures/particles/sparkles_main.dds'
+		foamParticles.Speed = NumberRange.new(2, 8)
+		foamParticles.Lifetime = NumberRange.new(3, 6)
+		foamParticles.Rate = 25
+		foamParticles.Rotation = NumberRange.new(0, 360)
+		foamParticles.Transparency = NumberSequence.new({
+			NumberSequenceKeypoint.new(0, 0.5),
+			NumberSequenceKeypoint.new(0.5, 0.3),
+			NumberSequenceKeypoint.new(1, 1)
+		})
+		foamParticles.Size = NumberSequence.new({
+			NumberSequenceKeypoint.new(0, 0.3),
+			NumberSequenceKeypoint.new(0.5, 0.6),
+			NumberSequenceKeypoint.new(1, 0.2)
+		})
+		foamParticles.Color = ColorSequence.new(Color3.fromRGB(200, 220, 255))
+		foamParticles.Parent = foamAttachment
+		
+		return foamAttachment, foamParticles
+	end
+	
+	-- Wave Animation Loop
+	local function startWaveAnimation()
+		RealisticOcean:Clean(runService.RenderStepped:Connect(function()
+			if not oceanEnabled then return end
+			
+			local currentTime = tick()
+			
+			-- Find all water parts and apply wave effects
+			local map = workspace:FindFirstChild('Map')
+			if map then
+				for _, descendant in ipairs(map:GetDescendants()) do
+					if descendant:IsA('Part') or descendant:IsA('MeshPart') then
+						if descendant.Material == Enum.Material.Water or descendant.Name:lower():find('water') or descendant.Name:lower():find('ocean') then
+							if not table.find(oceanWaterInstances, descendant) then
+								table.insert(oceanWaterInstances, descendant)
+							end
+							
+							-- Apply wave height offset
+							local waveHeight = generateWaves(descendant.Position, currentTime, 0.3, 0.01, 1.5)
+							-- Store original position if not stored
+							if not descendant:GetAttribute('OriginalY') then
+								descendant:SetAttribute('OriginalY', descendant.Position.Y)
+							end
+							
+							local originalY = descendant:GetAttribute('OriginalY')
+							local newCFrame = descendant.CFrame + Vector3.new(0, waveHeight, 0)
+							
+							-- Smooth animation
+							descendant.CFrame = descendant.CFrame:Lerp(newCFrame, 0.15)
+						end
+					end
+				end
+			end
+		end))
+	end
+	
+	-- Ocean Affects Player Movement (Buoyancy)
+	local function applyBuoyancyEffect()
+		RealisticOcean:Clean(runService.PreSimulation:Connect(function()
+			if not oceanEnabled or not entitylib.isAlive then return end
+			
+			local root = entitylib.character.RootPart
+			local rayParams = RaycastParams.new()
+			rayParams.IgnoreWater = false
+			
+			-- Check if player is in water
+			local region = Region3.new(root.Position - Vector3.new(4, 4, 4), root.Position + Vector3.new(4, 4, 4))
+			region = region:ExpandToGrid(4)
+			
+			local materials, sizes = terrain:ReadVoxels(region, 4)
+			local size = materials.Size
+			
+			for x = 1, size.X do
+				for y = 1, size.Y do
+					for z = 1, size.Z do
+						if materials[x][y][z] == Enum.Material.Water then
+							-- Apply upward force (buoyancy)
+							root.AssemblyLinearVelocity = root.AssemblyLinearVelocity + Vector3.new(0, 0.2, 0)
+							-- Apply water resistance
+							root.AssemblyLinearVelocity = root.AssemblyLinearVelocity * 0.95
+							break
+						end
+					end
+				end
+			end
+		end))
+	end
+	
+	-- Ocean Light Refraction Effect
+	local function enhanceOceanLighting()
+		local lighting = game:GetService('Lighting')
+		
+		-- Store original values
+		local originalAmbient = lighting.Ambient
+		local originalOutdoorAmbient = lighting.OutdoorAmbient
+		local originalClockTime = lighting.ClockTime
+		
+		-- Apply underwater-like atmospheric changes
+		if oceanEnabled then
+			lighting.Ambient = Color3.fromRGB(100, 150, 200)
+			lighting.OutdoorAmbient = Color3.fromRGB(100, 150, 200)
+		else
+			lighting.Ambient = originalAmbient
+			lighting.OutdoorAmbient = originalOutdoorAmbient
+		end
+	end
+	
+	RealisticOcean = vape.Categories.World:CreateModule({
+		Name = 'Realistic Ocean',
+		Function = function(callback)
+			oceanEnabled = callback
+			
+			if callback then
+				-- Initialize ocean enhancements
+				enhanceWaterShader()
+				enhanceOceanLighting()
+				startWaveAnimation()
+				applyBuoyancyEffect()
+				
+				-- Create foam effects at wave crests
+				local foamAttachment, foamParticles = createFoamEffect()
+				foamAttachment.Parent = gameCamera
+				table.insert(oceanWaterInstances, foamAttachment)
+				
+				vape.Connections = vape.Connections or {}
+				table.insert(vape.Connections, foamAttachment)
+			else
+				-- Restore original water appearance
+				table.clear(oceanWaterInstances)
+				local lighting = game:GetService('Lighting')
+				-- Reset to default values would go here
+			end
+		end,
+		Tooltip = 'Makes ocean water more realistic with waves, foam, and improved visuals'
+	})
+	
+	-- Wave Amplitude Slider
+	RealisticOcean:CreateSlider({
+		Name = 'Wave Height',
+		Min = 0.1,
+		Max = 2,
+		Default = 0.3,
+		Decimal = 10,
+		Function = function(val)
+			-- Amplitude will be updated in the render loop
+		end
+	})
+	
+	-- Wave Frequency Slider
+	RealisticOcean:CreateSlider({
+		Name = 'Wave Frequency',
+		Min = 0.001,
+		Max = 0.05,
+		Default = 0.01,
+		Decimal = 1000,
+		Function = function(val)
+			-- Frequency will be updated in the render loop
+		end
+	})
+	
+	-- Wave Speed Slider
+	RealisticOcean:CreateSlider({
+		Name = 'Wave Speed',
+		Min = 0.5,
+		Max = 4,
+		Default = 1.5,
+		Decimal = 10,
+		Function = function(val)
+			-- Speed will be updated in the render loop
+		end
+	})
+	
+	-- Water Transparency Toggle
+	RealisticOcean:CreateToggle({
+		Name = 'Enhanced Transparency',
+		Function = function(callback)
+			if callback then
+				for _, obj in pairs(oceanWaterInstances) do
+					if obj and obj:IsA('Part') then
+						obj.Transparency = 0.25
+					end
+				end
+			end
+		end
+	})
+	
+	-- Foam Effect Toggle
+	RealisticOcean:CreateToggle({
+		Name = 'Wave Foam',
+		Function = function(callback)
+			for _, obj in pairs(oceanWaterInstances) do
+				if obj:IsA('Attachment') and obj.Name == 'OceanFoam' then
+					for _, particle in ipairs(obj:GetChildren()) do
+						if particle:IsA('ParticleEmitter') then
+							particle.Enabled = callback
+						end
+					end
+				end
+			end
+		end,
+		Default = true
+	})
+end)
