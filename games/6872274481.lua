@@ -42119,6 +42119,7 @@ run(function()
 	local EnhancedOcean
 	local terrain = workspace:FindFirstChild('Terrain')
 	local originalWaterColor = nil
+	local waterParticles = {}
 	
 	EnhancedOcean = vape.Categories.World:CreateModule({
 		Name = 'Enhanced Ocean',
@@ -42131,15 +42132,15 @@ run(function()
 				-- Store original
 				originalWaterColor = terrain.WaterColor
 				
-				-- Make water look better
-				terrain.WaterColor = Color3.fromRGB(20, 110, 160)
+				-- Make water look more realistic with deeper blue
+				terrain.WaterColor = Color3.fromRGB(18, 95, 145)
 				
 				-- Also find and enhance any water parts
 				local function enhanceWaterParts(obj)
 					if obj:IsA('Part') or obj:IsA('MeshPart') or obj:IsA('UnionOperation') then
 						if obj.Material == Enum.Material.Water then
-							obj.Color = Color3.fromRGB(20, 110, 160)
-							obj.Transparency = 0.2
+							obj.Color = Color3.fromRGB(18, 95, 145)
+							obj.Transparency = 0.18
 							if obj:IsA('Part') then
 								obj.TopSurface = Enum.SurfaceType.Smooth
 								obj.BottomSurface = Enum.SurfaceType.Smooth
@@ -42151,6 +42152,21 @@ run(function()
 					end
 				end
 				enhanceWaterParts(workspace)
+				
+				-- Add subtle wave animation effect
+				EnhancedOcean:Clean(runService.RenderStepped:Connect(function()
+					local time = tick()
+					
+					-- Slightly vary the water color to simulate wave movement
+					local variation = math.sin(time * 0.5) * 5
+					local r = math.max(13, math.min(23, 18 + variation))
+					local g = math.max(90, math.min(100, 95 + variation))
+					local b = math.max(140, math.min(150, 145 + variation))
+					
+					if terrain then
+						terrain.WaterColor = Color3.fromRGB(r, g, b)
+					end
+				end))
 			else
 				-- Restore
 				local terrain = workspace:FindFirstChildWhichIsA('Terrain')
@@ -42159,7 +42175,7 @@ run(function()
 				end
 			end
 		end,
-		Tooltip = 'Enhances ocean appearance'
+		Tooltip = 'Realistic ocean with subtle wave effects'
 	})
 	
 	EnhancedOcean:CreateSlider({
@@ -42171,8 +42187,36 @@ run(function()
 		Function = function(val)
 			local terrain = workspace:FindFirstChildWhichIsA('Terrain')
 			if terrain then
-				local r, g, b = 20 * val, 110 * val, 160 * val
+				local r, g, b = 18 * val, 95 * val, 145 * val
 				terrain.WaterColor = Color3.fromRGB(math.min(r, 255), math.min(g, 255), math.min(b, 255))
+			end
+		end
+	})
+	
+	EnhancedOcean:CreateToggle({
+		Name = 'Deep Ocean Blue',
+		Function = function(callback)
+			local terrain = workspace:FindFirstChildWhichIsA('Terrain')
+			if terrain then
+				if callback then
+					terrain.WaterColor = Color3.fromRGB(10, 70, 120)
+				else
+					terrain.WaterColor = Color3.fromRGB(18, 95, 145)
+				end
+			end
+		end
+	})
+	
+	EnhancedOcean:CreateToggle({
+		Name = 'Shallow Water Color',
+		Function = function(callback)
+			local terrain = workspace:FindFirstChildWhichIsA('Terrain')
+			if terrain then
+				if callback then
+					terrain.WaterColor = Color3.fromRGB(30, 140, 180)
+				else
+					terrain.WaterColor = Color3.fromRGB(18, 95, 145)
+				end
 			end
 		end
 	})
