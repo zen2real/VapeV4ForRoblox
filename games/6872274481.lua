@@ -42128,7 +42128,7 @@ run(function()
     })
 end)
 run(function()
-	local Ambience1 = vape.Categories.CloudWare:CreateModule({
+	local Ambience1 = vape.Categories.R:CreateModule({
 		Name = "Ambience 1",
 		Function = function(callback)
 			local lighting = game:GetService("Lighting")
@@ -42153,7 +42153,7 @@ run(function()
 end)
 
 run(function()
-	local Ambience2 = vape.Categories.CloudWare:CreateModule({
+	local Ambience2 = vape.Categories.Render:CreateModule({
 		Name = "Ambience 2",
 		Function = function(callback)
 			local lighting = game:GetService("Lighting")
