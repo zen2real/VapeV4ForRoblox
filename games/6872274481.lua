@@ -22733,7 +22733,7 @@ run(function()
 								end
 
 							elseif method == 'Velocity' then
-								root.AssemblyLinearVelocity = Vector3.new(root.AssemblyLinearVelocity.X, 0, root.AssemblyLinearVelocity.Z)
+								root.AssemblyLinearVelocity = Vector3.new(root.AssemblyLinearVelocity.X, 5, root.AssemblyLinearVelocity.Z)
 								pearlFired = true
 								cooldown = currentTime
 
