@@ -41935,3 +41935,54 @@ run(function()
 		end
 	})
 end)
+Run(function(): ()
+    local Players = game:GetService("Players")
+    local ReplicatedStorage = game:GetService("ReplicatedStorage")
+    local lplr = Players.LocalPlayer
+    
+    -- Configs
+    local hpThreshold = 50
+    local checkDelay = 0.1
+
+    local safeescape = vape.Categories.Blatant:CreateModule({
+        Name = "SafeEscape",
+        Function = function(call: boolean): ()
+            if call then
+                task.spawn(function(): ()
+                    repeat
+                        local char = lplr.Character
+                        local hum = char and char:FindFirstChildOfClass("Humanoid")
+                        local root = char and char:FindFirstChild("HumanoidRootPart")
+
+                        if hum and root and hum.Health < hpThreshold then
+                            -- Look for a Telepearl in your inventory
+                            local pearl = lplr.Backpack:FindFirstChild("telepearl") or char:FindFirstChild("telepearl")
+                            
+                            if pearl then
+                                -- Logic to use the pearl
+                                -- Note: This fires the pearl in your current facing direction
+                                pearl:Activate()
+                                
+                                -- Optional: Small delay to prevent spamming all pearls at once
+                                task.wait(0.5)
+                            end
+                        end
+                        
+                        task.wait(checkDelay)
+                    until not safeescape.Enabled
+                end)
+            end
+        end,
+        Tooltip = "Automatically throws a telepearl when below 50 HP"
+    })
+
+    safeescape:CreateSlider({
+        Name = "HP Threshold",
+        Min = 10,
+        Max = 90,
+        Default = 50,
+        Function = function(val: number): ()
+            hpThreshold = val
+        end
+    })
+end)
