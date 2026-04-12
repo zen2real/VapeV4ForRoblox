@@ -41936,48 +41936,62 @@ run(function()
 	})
 end)
 Run(function(): ()
-    local Players = game:GetService("Players")
-    local ReplicatedStorage = game:GetService("ReplicatedStorage")
+    local Players = game:GetService('Players')
+    local ReplicatedStorage = game:GetService('ReplicatedStorage')
     local lplr = Players.LocalPlayer
-    
+
+    -- Bedwars Remote for throwing items
+    local useItemRemote = ReplicatedStorage
+        :WaitForChild('rbxts_include')
+        :WaitForChild('node_modules')
+        :WaitForChild('@rbxts')
+        :WaitForChild('net')
+        :WaitForChild('out')
+        :WaitForChild('_NetManaged')
+        :WaitForChild('ProjectileFire')
+
     -- Configs
     local hpThreshold = 50
-    local checkDelay = 0.1
 
-    local safeescape = vape.Categories.Blatant:CreateModule({
-        Name = "SafeEscape",
+    local autoescape = vape.Categories.Blatant:CreateModule({
+        Name = 'AutoEscape',
         Function = function(call: boolean): ()
             if call then
                 task.spawn(function(): ()
                     repeat
                         local char = lplr.Character
-                        local hum = char and char:FindFirstChildOfClass("Humanoid")
-                        local root = char and char:FindFirstChild("HumanoidRootPart")
+                        local hum = char and char:FindFirstChildWhichIsA('Humanoid')
+                        local root = char and char:FindFirstChild('HumanoidRootPart')
 
-                        if hum and root and hum.Health < hpThreshold then
-                            -- Look for a Telepearl in your inventory
-                            local pearl = lplr.Backpack:FindFirstChild("telepearl") or char:FindFirstChild("telepearl")
+                        if hum and hum.Health < hpThreshold and root then
+                            -- Look for pearl in inventory
+                            local pearl = lplr.Backpack:FindFirstChild('telepearl') or char:FindFirstChild('telepearl')
                             
                             if pearl then
-                                -- Logic to use the pearl
-                                -- Note: This fires the pearl in your current facing direction
-                                pearl:Activate()
-                                
-                                -- Optional: Small delay to prevent spamming all pearls at once
-                                task.wait(0.5)
+                                -- Fire the projectile remote (This is how Bedwars throws pearls)
+                                useItemRemote:InvokeServer(
+                                    pearl,             -- The Item
+                                    'telepearl',       -- The Item Name
+                                    'telepearl',       -- The Projectile Name
+                                    root.Position,     -- Origin
+                                    root.Position + (root.CFrame.LookVector * 10) + Vector3.new(0, 5, 0), -- Destination (forward and up)
+                                    Vector3.new(0, -20, 0) -- Gravity/Velocity
+                                )
+                                task.wait(0.5) -- Prevent using all pearls at once
                             end
                         end
-                        
-                        task.wait(checkDelay)
-                    until not safeescape.Enabled
+                        task.wait(0.1)
+                    until not autoescape.Enabled
                 end)
             end
+            -- Return nil to prevent 'Disconnect' error
+            return nil
         end,
-        Tooltip = "Automatically throws a telepearl when below 50 HP"
+        Tooltip = 'Auto-throws telepearl when HP is low'
     })
 
-    safeescape:CreateSlider({
-        Name = "HP Threshold",
+    autoescape:CreateSlider({
+        Name = 'HP Threshold',
         Min = 10,
         Max = 90,
         Default = 50,
