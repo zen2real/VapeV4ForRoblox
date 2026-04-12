@@ -22732,6 +22732,11 @@ run(function()
 									root.AssemblyLinearVelocity = Vector3.zero
 								end
 
+							elseif method == 'Velocity' then
+								root.AssemblyLinearVelocity = Vector3.new(root.AssemblyLinearVelocity.X, 0, root.AssemblyLinearVelocity.Z)
+								pearlFired = true
+								cooldown = currentTime
+
 							end
 
 						end
@@ -22744,7 +22749,7 @@ run(function()
 
 	NoFallMethod = NoFall:CreateDropdown({
 		Name = 'Method',
-		List = {'TelePearl','AntiCheat'},
+		List = {'TelePearl','AntiCheat','Velocity'},
 		Default = 'TelePearl',
 		Tooltip = 'more coming!!',
 		Function = function(v)
