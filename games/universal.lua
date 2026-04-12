@@ -2269,7 +2269,7 @@ run(function()
         end)
     end
 
-    Invisibility = vape.Categories.Blatent:CreateModule({
+    Invisibility = vape.Categories.Utility:CreateModule({
         Name = 'Invisibility',
         Function = function(callback)
             invisibilityEnabled = callback
