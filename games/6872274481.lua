@@ -42040,7 +42040,7 @@ run(function()
     local MotionBlurConnection
     local MotionBlurEffect
 
-    MotionBlur = vape.Categories.R:CreateModule({
+    MotionBlur = vape.Categories.Render:CreateModule({
         Name = 'MotionBlur',
         Function = function(callback)
             local Lighting = game:GetService("Lighting")
