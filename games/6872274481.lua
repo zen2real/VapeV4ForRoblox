@@ -42039,7 +42039,12 @@ end)
 run(function()
     local MotionBlurConnection
     local MotionBlurEffect
+    local Intensity
 
+    -- Create a placeholder for Intensity
+    Intensity = { Value = 1 }
+
+    -- Create the module
     MotionBlur = vape.Categories.Render:CreateModule({
         Name = 'MotionBlur',
         Function = function(callback)
@@ -42092,7 +42097,7 @@ run(function()
                     local moveBlur = math.clamp(moveDelta * 2.2, 0, 15)
                     lastPosition = pos
 
-                    local targetBlur = math.clamp(rotBlur + moveBlur, 0, 25 * Intensity.Value)
+                    local targetBlur = math.clamp(rotBlur + moveBlur, 0, 25 * (Intensity and Intensity.Value or 1))
                     currentBlur = lerp(currentBlur, targetBlur, 0.2)
                     blur.Size = currentBlur
                 end)
@@ -42113,6 +42118,7 @@ run(function()
         Tooltip = "Self Explanatory"
     })
 
+    -- Now create the slider
     Intensity = MotionBlur:CreateSlider({
         Name = "Intensity",
         Min = 0.1,
