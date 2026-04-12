@@ -42117,129 +42117,123 @@ end)
 -- ============ Ocean Enhancement System ============
 run(function()
 	local RealisticOcean
-	local terrain = workspace:FindFirstChildWhichIsA('Terrain')
-	local oceanWaterParts = {}
 	local oceanEnabled = false
-	local waveConnections = {}
-	local waveAmplitude = 0.3
-	local waveFrequency = 0.01
+	local waveAmplitude = 0.5
 	local waveSpeed = 1.5
-	local originalPositions = {}
+	local oceanContainer = nil
+	local waterSurface = nil
+	local waveParticles = {}
 	
-	-- Find all water in the map
-	local function findWaterParts()
-		local waterParts = {}
-		local map = workspace:FindFirstChild('Map')
-		if not map then return waterParts end
+	-- Create ocean in the void
+	local function createOceanInVoid()
+		-- Create main container
+		oceanContainer = Instance.new('Folder')
+		oceanContainer.Name = 'RealisticOcean'
+		oceanContainer.Parent = workspace
 		
-		local function searchForWater(obj)
-			if obj:IsA('Part') or obj:IsA('MeshPart') or obj:IsA('UnionOperation') then
-				-- Check if it's water
-				if obj.Material == Enum.Material.Water or string.lower(obj.Name):find('water') or string.lower(obj.Name):find('ocean') then
-					table.insert(waterParts, obj)
-					originalPositions[obj] = obj.Position
-				end
-			end
-			-- Recursively search children
-			for _, child in ipairs(obj:GetChildren()) do
-				searchForWater(child)
-			end
-		end
+		-- Create large water surface at the void (way below the map)
+		waterSurface = Instance.new('Part')
+		waterSurface.Name = 'OceanSurface'
+		waterSurface.Shape = Enum.PartType.Block
+		waterSurface.Size = Vector3.new(2000, 50, 2000)
+		waterSurface.Material = Enum.Material.Water
+		waterSurface.Color = Color3.fromRGB(25, 100, 150)
+		waterSurface.CanCollide = true
+		waterSurface.CanQuery = true
+		waterSurface.CFrame = CFrame.new(0, -1500, 0)  -- Place in void
+		waterSurface.Transparency = 0.2
+		waterSurface.Parent = oceanContainer
 		
-		searchForWater(map)
-		return waterParts
-	end
-	
-	-- Create visible wave effect using parts
-	local function createWaveVisuals()
-		local visualization = Instance.new('Folder')
-		visualization.Name = 'OceanVisualization'
-		visualization.Parent = workspace
+		-- Add smooth surface for realistic reflection
+		local surfaceMesh = Instance.new('Part')
+		surfaceMesh.Name = 'WaterReflection'
+		surfaceMesh.Shape = Enum.PartType.Block
+		surfaceMesh.Size = Vector3.new(2000, 2, 2000)
+		surfaceMesh.Material = Enum.Material.SmoothPlastic
+		surfaceMesh.Color = Color3.fromRGB(30, 110, 160)
+		surfaceMesh.CanCollide = false
+		surfaceMesh.CFrame = CFrame.new(0, -1475, 0)
+		surfaceMesh.Transparency = 0.15
+		surfaceMesh.Parent = oceanContainer
 		
-		-- Create floating particles that simulate waves
-		for i = 1, 20 do
+		-- Create wave particles across the surface for realistic look
+		local waveCount = 40
+		for i = 1, waveCount do
+			local angle = (i / waveCount) * math.pi * 2
+			local distance = 500 + (i % 10) * 50
+			local x = math.cos(angle) * distance
+			local z = math.sin(angle) * distance
+			
 			local wavePart = Instance.new('Part')
-			wavePart.Name = 'WaveParticle'
-			wavePart.Shape = Enum.PartType.Cylinder
-			wavePart.Size = Vector3.new(2, 0.5, 0.5)
+			wavePart.Name = 'WaveEffect'
+			wavePart.Shape = Enum.PartType.Ball
+			wavePart.Size = Vector3.new(40, 40, 40)
 			wavePart.Material = Enum.Material.Neon
-			wavePart.Color = Color3.fromRGB(30, 120, 160)
+			wavePart.Color = Color3.fromRGB(150, 200, 255)
 			wavePart.CanCollide = false
 			wavePart.CanQuery = false
-			wavePart.CFrame = CFrame.new(math.random(-100, 100), 5, math.random(-100, 100)) * CFrame.Angles(math.rad(90), 0, 0)
-			wavePart.Parent = visualization
+			wavePart.CFrame = CFrame.new(x, -1475, z)
+			wavePart.Transparency = 0.7
+			wavePart.Parent = oceanContainer
 			
-			table.insert(oceanWaterParts, wavePart)
+			table.insert(waveParticles, {part = wavePart, offsetX = x, offsetZ = z, index = i})
 		end
 		
-		-- Create foam particles
-		local foamAttachment = Instance.new('Attachment')
-		foamAttachment.Name = 'WaveFoam'
-		foamAttachment.Parent = visualization
+		-- Add foam particles
+		local foamAttach = Instance.new('Attachment')
+		foamAttach.Parent = waterSurface
+		foamAttach.Position = Vector3.new(0, 20, 0)
 		
 		local foam = Instance.new('ParticleEmitter')
 		foam.Texture = 'rbxasset://textures/particles/smoke_main.dds'
-		foam.Speed = NumberRange.new(5, 10)
-		foam.Lifetime = NumberRange.new(4, 8)
-		foam.Rate = 20
+		foam.Speed = NumberRange.new(8, 12)
+		foam.Lifetime = NumberRange.new(6, 10)
+		foam.Rate = 30
 		foam.Transparency = NumberSequence.new({
-			NumberSequenceKeypoint.new(0, 0.6),
-			NumberSequenceKeypoint.new(0.5, 0.3),
+			NumberSequenceKeypoint.new(0, 0.7),
+			NumberSequenceKeypoint.new(0.4, 0.4),
 			NumberSequenceKeypoint.new(1, 1)
 		})
-		foam.Size = NumberSequence.new(0.5, 0.2)
-		foam.Color = ColorSequence.new(Color3.fromRGB(255, 255, 255))
-		foam.Parent = foamAttachment
-		
-		table.insert(oceanWaterParts, visualization)
-		return visualization, foamAttachment
+		foam.Size = NumberSequence.new(1, 0.5)
+		foam.Color = ColorSequence.new(Color3.fromRGB(220, 230, 255))
+		foam.Enabled = true
+		foam.Parent = foamAttach
 	end
 	
-	-- Animate water to make it move realistically
-	local function startWaveAnimation()
+	-- Animate waves realistically
+	local function animateWaves()
 		if RealisticOcean then
 			RealisticOcean:Clean(runService.RenderStepped:Connect(function()
-				if not oceanEnabled then return end
+				if not oceanEnabled or not waterSurface or not waterSurface.Parent then return end
 				
 				local time = tick()
 				
-				-- Animate existing water parts
-				for _, part in ipairs(oceanWaterParts) do
-					if part and part.Parent and part.Name == 'WaveParticle' then
-						-- Calculate wave offset
-						local basePos = part.Position
-						local waveOffset = math.sin(time * waveSpeed + basePos.X * 0.05) * waveAmplitude + 
-											math.cos(time * waveSpeed * 0.7 + basePos.Z * 0.05) * (waveAmplitude * 0.7)
-						
-						part.CFrame = CFrame.new(basePos.X, basePos.Y + waveOffset, basePos.Z) * CFrame.Angles(math.rad(90), time, 0)
-					end
-				end
+				-- Animate water surface with wave
+				local waveOffset = math.sin(time * waveSpeed) * waveAmplitude + 
+									math.cos(time * waveSpeed * 0.7) * (waveAmplitude * 0.6)
+				waterSurface.CFrame = CFrame.new(0, -1500 + waveOffset, 0)
 				
-				-- Animate found water parts in the map
-				for _, part in ipairs(oceanWaterParts) do
-					if part and part.Parent and (part.Material == Enum.Material.Water or string.lower(part.Name):find('water')) then
-						local originalPos = originalPositions[part]
-						if originalPos then
-							local waveOffset = math.sin(time * waveSpeed + originalPos.X * 0.02) * waveAmplitude
-							part.CFrame = CFrame.new(originalPos + Vector3.new(0, waveOffset, 0)):Lerp(
-								CFrame.new(originalPos + Vector3.new(0, waveOffset, 0)), 0.1
-							)
-						end
+				-- Animate wave particles for realistic effect
+				for _, waveData in ipairs(waveParticles) do
+					if waveData.part and waveData.part.Parent then
+						local waveHeightEffect = math.sin(time * waveSpeed + waveData.index * 0.3) * waveAmplitude * 2 +
+													math.cos(time * waveSpeed * 0.8 + waveData.index * 0.2) * (waveAmplitude * 1.5)
+						
+						-- Create circular wave pattern
+						local distance = math.sqrt(waveData.offsetX^2 + waveData.offsetZ^2)
+						local radiationWave = math.sin((time * waveSpeed * 0.5) - (distance * 0.01)) * waveAmplitude
+						
+						waveData.part.CFrame = CFrame.new(
+							waveData.offsetX, 
+							-1475 + waveHeightEffect + radiationWave, 
+							waveData.offsetZ
+						)
+						
+						-- Subtle transparency change for wave effect
+						waveData.part.Transparency = 0.7 + math.sin(time * waveSpeed * 0.5 + waveData.index) * 0.1
 					end
 				end
 			end))
-		end
-	end
-	
-	-- Enhance water appearance
-	local function enhanceWaterAppearance()
-		for _, part in ipairs(oceanWaterParts) do
-			if part and part.Parent and (part.Material == Enum.Material.Water or string.lower(part.Name):find('water')) then
-				part.Material = Enum.Material.Glass
-				part.Color = Color3.fromRGB(30, 120, 160)
-				part.Transparency = 0.25
-				part.CanCollide = false
-			end
 		end
 	end
 	
@@ -42249,48 +42243,38 @@ run(function()
 			oceanEnabled = callback
 			
 			if callback then
-				-- Find existing water
-				local foundWater = findWaterParts()
-				for _, part in ipairs(foundWater) do
-					if not table.find(oceanWaterParts, part) then
-						table.insert(oceanWaterParts, part)
-						originalPositions[part] = part.Position
-					end
+				-- Create ocean if it doesn't exist
+				if not oceanContainer or not oceanContainer.Parent then
+					createOceanInVoid()
 				end
 				
-				-- If no water found, create visualization
-				if #oceanWaterParts == 0 then
-					createWaveVisuals()
+				-- Make it visible
+				if oceanContainer then
+					oceanContainer.Parent = workspace
 				end
 				
-				enhanceWaterAppearance()
-				startWaveAnimation()
-				
-				-- Alter atmosphere
+				-- Adjust lighting for ocean atmosphere
 				local lighting = game:GetService('Lighting')
-				lighting.Ambient = Color3.fromRGB(80, 140, 200)
-				lighting.OutdoorAmbient = Color3.fromRGB(80, 140, 200)
+				lighting.Ambient = Color3.fromRGB(100, 150, 200)
+				lighting.OutdoorAmbient = Color3.fromRGB(100, 150, 200)
+				
+				-- Start wave animation
+				animateWaves()
 			else
-				-- Disable effects
-				for _, part in ipairs(oceanWaterParts) do
-					if part and part.Parent then
-						if part.Name == 'OceanVisualization' then
-							part:Destroy()
-						end
-					end
+				-- Hide ocean
+				if oceanContainer and oceanContainer.Parent then
+					oceanContainer.Parent = nil
 				end
-				table.clear(oceanWaterParts)
-				table.clear(originalPositions)
 			end
 		end,
-		Tooltip = 'Makes ocean water more realistic with waves and foam'
+		Tooltip = 'Creates a realistic ocean in the void beneath the map'
 	})
 	
 	RealisticOcean:CreateSlider({
 		Name = 'Wave Height',
 		Min = 0.1,
-		Max = 2,
-		Default = 0.3,
+		Max = 3,
+		Default = 0.5,
 		Decimal = 10,
 		Function = function(val)
 			waveAmplitude = val
@@ -42300,11 +42284,30 @@ run(function()
 	RealisticOcean:CreateSlider({
 		Name = 'Wave Speed',
 		Min = 0.5,
-		Max = 4,
+		Max = 5,
 		Default = 1.5,
 		Decimal = 10,
 		Function = function(val)
 			waveSpeed = val
+		end
+	})
+	
+	RealisticOcean:CreateSlider({
+		Name = 'Ocean Depth',
+		Min = 500,
+		Max = 5000,
+		Default = 1500,
+		Decimal = 100,
+		Function = function(val)
+			if waterSurface then
+				waterSurface.CFrame = CFrame.new(0, -val, 0)
+				-- Reposition wave particles
+				for _, waveData in ipairs(waveParticles) do
+					if waveData.part then
+						waveData.part.CFrame = CFrame.new(waveData.offsetX, -val + 25, waveData.offsetZ)
+					end
+				end
+			end
 		end
 	})
 end)
