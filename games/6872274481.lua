@@ -4085,14 +4085,13 @@ run(function()
 						return old(root, mass, dir, knockback, ...)
 					end
 					
+					if type(knockback) ~= 'table' then
+						return old(root, mass, dir, knockback, ...)
+					end
+					
 					local newKnockback = {}
-					if type(knockback) == 'table' then
-						for k, v in pairs(knockback) do
-							newKnockback[k] = v
-						end
-					elseif type(knockback) == 'number' then
-						newKnockback.horizontal = knockback
-						newKnockback.vertical = knockback
+					for k, v in pairs(knockback) do
+						newKnockback[k] = v
 					end
 					newKnockback.horizontal = (newKnockback.horizontal or 1) * ((reduceHorizontal and horizValue ~= 100) and (horizValue / 100) or 1)
 					newKnockback.vertical = (newKnockback.vertical or 1) * ((reduceVertical and vertValue ~= 100) and (vertValue / 100) or 1)
