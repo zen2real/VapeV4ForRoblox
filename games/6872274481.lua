@@ -22622,7 +22622,7 @@ run(function()
 			if calc then break end
 		end
 		if not calc then return false end
-		local dir = CFrame.lookAt(pos, calc).LookVector * meta.launchVelocity
+		local dir = calc * meta.launchVelocity
 		nfProjectileRemote:InvokeServer(pearlTool, 'telepearl', 'telepearl', pos, pos, dir, httpService:GenerateGUID(true), {drawDurationSeconds = 1, shotId = httpService:GenerateGUID(false)}, workspace:GetServerTimeNow() - 0.045)
 		return true
 	end
