@@ -41589,3 +41589,178 @@ run(function()
         end
     })
 end)
+run(function()
+	local GreySky
+	local Lighting = game:GetService("Lighting")
+	local ReplicatedStorage = game:GetService("ReplicatedStorage")
+	
+	local originalProps = {}
+	local stashedObjects = {}
+	local customSky = nil
+	
+	local function applyGreySky()
+		-- Save original settings
+		originalProps = {
+			Ambient = Lighting.Ambient,
+			OutdoorAmbient = Lighting.OutdoorAmbient,
+			Brightness = Lighting.Brightness,
+			FogColor = Lighting.FogColor,
+			FogStart = Lighting.FogStart,
+			FogEnd = Lighting.FogEnd,
+			ClockTime = Lighting.ClockTime,
+			GlobalShadows = Lighting.GlobalShadows,
+			EnvironmentDiffuseScale = Lighting.EnvironmentDiffuseScale,
+			EnvironmentSpecularScale = Lighting.EnvironmentSpecularScale
+		}
+		
+		-- Stash Skies, Atmospheres, and Post-Processing effects (Bloom, etc.)
+		for _, v in pairs(Lighting:GetChildren()) do
+			if v:IsA("Sky") or v:IsA("Atmosphere") or v:IsA("PostProcessEffect") then
+				table.insert(stashedObjects, v)
+				v.Parent = ReplicatedStorage
+			end
+		end
+		
+		-- Create the solid grey skybox
+		customSky = Instance.new("Sky")
+		customSky.Name = "SolidGreySky"
+		-- Setting these to empty strings forces the default grey background
+		customSky.SkyboxBk, customSky.SkyboxDn, customSky.SkyboxFt = "", "", ""
+		customSky.SkyboxLf, customSky.SkyboxRt, customSky.SkyboxUp = "", "", ""
+		customSky.SunTextureId, customSky.MoonTextureId = "", ""
+		customSky.SunAngularSize = 0
+		customSky.Parent = Lighting
+		
+		-- Match Lighting to the screenshot (Flat Grey)
+		Lighting.GlobalShadows = false
+		Lighting.Brightness = 0
+		Lighting.Ambient = Color3.fromRGB(130, 130, 130)
+		Lighting.OutdoorAmbient = Color3.fromRGB(130, 130, 130)
+		Lighting.FogColor = Color3.fromRGB(130, 130, 130)
+		Lighting.FogStart = 0
+		Lighting.FogEnd = 99999 -- High number removes the "distance" look
+		Lighting.EnvironmentDiffuseScale = 0
+		Lighting.EnvironmentSpecularScale = 0
+	end
+	
+	local function cleanup()
+		if originalProps.Ambient then
+			Lighting.Ambient = originalProps.Ambient
+			Lighting.OutdoorAmbient = originalProps.OutdoorAmbient
+			Lighting.Brightness = originalProps.Brightness
+			Lighting.FogColor = originalProps.FogColor
+			Lighting.FogStart = originalProps.FogStart
+			Lighting.FogEnd = originalProps.FogEnd
+			Lighting.ClockTime = originalProps.ClockTime
+			Lighting.GlobalShadows = originalProps.GlobalShadows
+			Lighting.EnvironmentDiffuseScale = originalProps.EnvironmentDiffuseScale
+			Lighting.EnvironmentSpecularScale = originalProps.EnvironmentSpecularScale
+		end
+		
+		if customSky then customSky:Destroy() customSky = nil end
+		
+		for _, obj in ipairs(stashedObjects) do
+			if obj and obj.Parent == ReplicatedStorage then
+				obj.Parent = Lighting
+			end
+		end
+		
+		table.clear(stashedObjects)
+		table.clear(originalProps)
+	end
+	
+	GreySky = vape.Categories.Render:CreateModule({
+		Name = "GreySky",
+		Tooltip = 'Gives the game a flat, textureless grey aesthetic',
+		Function = function(callback)
+			if callback then
+				applyGreySky()
+			else
+				cleanup()
+			end
+		end
+	})
+end)
+run(function()
+    local conn
+
+    PixelSword = vape.Categories.Utility:CreateModule({
+        Name = "PixelSword",
+        Function = function(callback)
+            if callback then
+                conn = workspace.CurrentCamera.Viewmodel.ChildAdded:Connect(function(x)
+                    if x and x:FindFirstChild("Handle") then
+                        if string.find(x.Name:lower(), 'sword') then
+                            x.Handle.Material = Enum.Material.ForceField
+                            x.Handle.MeshId = "rbxassetid://13471207377"
+                            x.Handle.BrickColor = BrickColor.new("Hot pink")
+                        end
+                    end
+                end)
+            else
+                if conn then
+                    conn:Disconnect()
+                    conn = nil
+                end
+            end
+        end,
+        Default = false,
+        Tooltip = "Customizes Your Swords"
+    })
+end)
+
+run(function()
+	local NoCollision
+	local last = {}
+	NoCollision = vape.Categories.Blatant:CreateModule({
+		Name = 'MineThrough',
+		Tooltip = 'Removes player\'s collision when ur near a bed',
+		Function = function(callback)
+			if callback then
+				NoCollision:Clean(runService.PreSimulation:Connect(function()
+					local plrs = {}
+
+					for i, v in entitylib.List do
+						if not v.NPC then
+							table.insert(plrs, v)
+						end
+					end
+
+					for _, v in last do
+						local found = false
+
+						for _, v2 in plrs do
+							if v.Player == v2.Player then
+								found = true
+								break
+							end
+						end
+
+						if not found and v.Character then
+							for i,v in v.Character:GetDescendants() do
+								if v.ClassName == 'Part' or v.ClassName == 'MeshPart' then
+									v.CanQuery = true
+								end
+							end
+						end
+					end
+
+					for _, v in plrs do
+						if v.Character then
+							for i,v in v.Character:GetDescendants() do
+								if v.ClassName == 'Part' or v.ClassName == 'MeshPart' then
+									v.CanQuery = false
+									v.CanTouch = false
+									v.CanCollide = false
+								end
+							end
+						end
+					end
+
+					last = plrs
+				end))
+			end
+		end
+	})
+end)
+
