@@ -38654,22 +38654,14 @@ run(function()
 end)
 run(function()
     local InfiniteJump
-    local TP
 
     local JumpVelocity = 50 -- fixed jump strength
-    local tpTick = tick()
-    local oldy
-    local rayCheck = RaycastParams.new()
-    rayCheck.RespectCanCollide = true
 
     InfiniteJump = vape.Categories.Blatant:CreateModule({
         Name = "InfiniteJump 2.0",
-        Tooltip = "Infinite jump + TP Down",
+        Tooltip = "Infinite jump",
         Function = function(callback)
             if callback then
-                tpTick = tick()
-                oldy = nil
-
                 -- KEYBOARD SUPPORT
                 InfiniteJump:Clean(inputService.InputBegan:Connect(function(input, gameProcessed)
                     if gameProcessed then return end
@@ -38715,71 +38707,7 @@ run(function()
                         end
                     end))
                 end
-
-                -- TP DOWN LOGIC (copied from Fly style)
-                InfiniteJump:Clean(runService.PreSimulation:Connect(function()
-                    if entitylib.isAlive and lplr.Character and lplr.Character.PrimaryPart then
-                        local root = lplr.Character.PrimaryPart
-
-                        rayCheck.FilterDescendantsInstances = {
-                            lplr.Character,
-                            gameCamera,
-                            AntiFallPart
-                        }
-                        rayCheck.CollisionGroup = root.CollisionGroup
-
-                        if TP.Enabled then
-                            local airleft = (tick() - entitylib.character.AirTime)
-
-                            if airleft > 2 then
-                                if not oldy then
-                                    local ray = workspace:Raycast(
-                                        root.Position,
-                                        Vector3.new(0, -1000, 0),
-                                        rayCheck
-                                    )
-
-                                    if ray then
-                                        oldy = root.Position.Y
-                                        tpTick = tick() + 0.11
-
-                                        root.CFrame = CFrame.lookAlong(
-                                            Vector3.new(
-                                                root.Position.X,
-                                                ray.Position.Y + entitylib.character.HipHeight,
-                                                root.Position.Z
-                                            ),
-                                            root.CFrame.LookVector
-                                        )
-                                    end
-                                end
-                            end
-
-                            if oldy then
-                                if tpTick < tick() then
-                                    local newpos = Vector3.new(
-                                        root.Position.X,
-                                        oldy,
-                                        root.Position.Z
-                                    )
-
-                                    root.CFrame = CFrame.lookAlong(
-                                        newpos,
-                                        root.CFrame.LookVector
-                                    )
-
-                                    oldy = nil
-                                end
-                            end
-                        end
-                    end
-                end))
             end
         end
-    })
-
-    TP = InfiniteJump:CreateToggle({
-        Name = "TP Down",
-        Default = true
     })
 end)
