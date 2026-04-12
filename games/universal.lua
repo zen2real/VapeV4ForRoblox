@@ -2202,7 +2202,7 @@ run(function()
             hrp.Color = Color3.new(1, 1, 1)
             hrp.Material = Enum.Material.Plastic
         else
-            hrp.Transparency = 1
+            hrp.Transparency = 0
         end
 
         hrp.CanCollide = true
