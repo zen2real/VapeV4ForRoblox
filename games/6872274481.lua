@@ -4264,26 +4264,6 @@ run(function()
 	})
 end)
 	
-run(function()
-	local NoFall
-	
-	NoFall = vape.Categories.Blatant:CreateModule({
-		Name = 'NoFall',
-		Function = function(callback)
-			if callback then
-				NoFall:Clean(runService.PreSimulation:Connect(function()
-					if entitylib.isAlive then
-						local root = entitylib.character.RootPart
-						if root.AssemblyLinearVelocity.Y < -50 then
-							root.AssemblyLinearVelocity = Vector3.new(root.AssemblyLinearVelocity.X, 0, root.AssemblyLinearVelocity.Z)
-						end
-					end
-				end))
-			end
-		end,
-		Tooltip = 'Prevents fall damage'
-	})
-end)
 	
 local Fly
 local LongJump
