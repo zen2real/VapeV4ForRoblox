@@ -4032,7 +4032,29 @@ run(function()
     end)
 end)
 	
--- Velocity module removed to debug loading issue
+run(function()
+	local Velocity
+	local old
+	
+	Velocity = vape.Categories.Combat:CreateModule({
+		Name = 'Velocity',
+		Function = function(callback)
+			if callback then
+				old = bedwars.KnockbackUtil.applyKnockback
+				bedwars.KnockbackUtil.applyKnockback = function(root, mass, dir, knockback, ...)
+					if type(knockback) == 'table' then
+						knockback.horizontal = 0
+						knockback.vertical = 0
+					end
+					return old(root, mass, dir, knockback, ...)
+				end
+			else
+				bedwars.KnockbackUtil.applyKnockback = old
+			end
+		end,
+		Tooltip = 'Removes knockback'
+	})
+end)
 	
 local AntiFallDirection
 run(function()
