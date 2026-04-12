@@ -42117,36 +42117,45 @@ end)
 -- ============ Enhanced Ocean System ============
 run(function()
 	local EnhancedOcean
-	local originalOceanSettings = {}
+	local modifiedParts = {}
 	
 	EnhancedOcean = vape.Categories.World:CreateModule({
 		Name = 'Enhanced Ocean',
 		Function = function(callback)
 			if callback then
-				-- Find all water in the map and enhance it
-				local map = workspace:FindFirstChild('Map')
-				if map then
-					local function enhanceWater(obj)
-						if obj:IsA('Part') or obj:IsA('MeshPart') or obj:IsA('UnionOperation') then
-							if obj.Material == Enum.Material.Water or string.lower(obj.Name):find('water') or string.lower(obj.Name):find('ocean') then
-								-- Store original settings
-								if not originalOceanSettings[obj] then
-									originalOceanSettings[obj] = {
-										Material = obj.Material,
-										Color = obj.Color,
-										Transparency = obj.Transparency,
-										Reflectance = obj.Reflectance,
-										Size = obj.Size
-									}
-								end
+				-- Search entire workspace for water parts
+				local function findAndEnhanceWater(obj)
+					if not obj then return end
+					
+					-- Check if this part is water
+					if obj:IsA('Part') or obj:IsA('MeshPart') or obj:IsA('UnionOperation') or obj:IsA('Terrain') then
+						local isWater = false
+						
+						-- Check material
+						if obj.Material == Enum.Material.Water then
+							isWater = true
+						end
+						
+						-- Check name
+						if not isWater and obj.Name then
+							local name = string.lower(obj.Name)
+							if name:find('water') or name:find('ocean') or name:find('sea') then
+								isWater = true
+							end
+						end
+						
+						-- Apply enhancements to water
+						if isWater then
+							if not table.find(modifiedParts, obj) then
+								table.insert(modifiedParts, obj)
 								
-								-- Enhanced ocean settings
+								-- Apply glossy water effect
 								obj.Material = Enum.Material.Glass
-								obj.Color = Color3.fromRGB(20, 100, 160)
-								obj.Transparency = 0.1
-								obj.Reflectance = 0.5
+								obj.Color = Color3.fromRGB(20, 110, 160)
+								obj.Transparency = 0.15
+								obj.Reflectance = 0.6
 								
-								-- Increase resolution if possible
+								-- Smooth surfaces
 								if obj:IsA('Part') then
 									obj.TopSurface = Enum.SurfaceType.Smooth
 									obj.BottomSurface = Enum.SurfaceType.Smooth
@@ -42157,76 +42166,57 @@ run(function()
 								end
 							end
 						end
-						
-						-- Search children
-						for _, child in ipairs(obj:GetChildren()) do
-							enhanceWater(child)
-						end
 					end
 					
-					enhanceWater(map)
-				end
-			else
-				-- Restore original settings
-				for obj, settings in pairs(originalOceanSettings) do
-					if obj and obj.Parent then
-						obj.Material = settings.Material
-						obj.Color = settings.Color
-						obj.Transparency = settings.Transparency
-						obj.Reflectance = settings.Reflectance
+					-- Search children
+					for _, child in ipairs(obj:GetChildren()) do
+						findAndEnhanceWater(child)
 					end
 				end
-				table.clear(originalOceanSettings)
-			end
-		end,
-		Tooltip = 'Enhances original ocean with better reflectance and resolution'
-	})
-	
-	EnhancedOcean:CreateColorSlider({
-		Name = 'Water Color',
-		DefaultHue = 0.55,
-		DefaultSat = 0.87,
-		DefaultValue = 0.63,
-		DefaultOpacity = 1,
-		Function = function(hue, sat, val, opacity)
-			local color = Color3.fromHSV(hue, sat, val)
-			local map = workspace:FindFirstChild('Map')
-			if map then
-				local function updateWaterColor(obj)
-					if obj:IsA('Part') or obj:IsA('MeshPart') or obj:IsA('UnionOperation') then
-						if obj.Material == Enum.Material.Glass and (string.lower(obj.Name):find('water') or originalOceanSettings[obj]) then
-							obj.Color = color
+				
+				-- Start search from workspace
+				findAndEnhanceWater(workspace)
+				
+				-- Also modify any water created after this
+				EnhancedOcean:Clean(workspace.DescendantAdded:Connect(function(obj)
+					if obj:IsA('Part') or obj:IsA('MeshPart') then
+						if obj.Material == Enum.Material.Water or (obj.Name and (string.lower(obj.Name):find('water') or string.lower(obj.Name):find('ocean'))) then
+							if not table.find(modifiedParts, obj) then
+								table.insert(modifiedParts, obj)
+								obj.Material = Enum.Material.Glass
+								obj.Color = Color3.fromRGB(20, 110, 160)
+								obj.Transparency = 0.15
+								obj.Reflectance = 0.6
+							end
 						end
 					end
-					for _, child in ipairs(obj:GetChildren()) do
-						updateWaterColor(child)
+				end))
+			else
+				-- Restore old appearance (set to water material)
+				for _, part in ipairs(modifiedParts) do
+					if part and part.Parent then
+						part.Material = Enum.Material.Water
+						part.Transparency = 0
+						part.Reflectance = 0
 					end
 				end
-				updateWaterColor(map)
+				table.clear(modifiedParts)
 			end
-		end
+		end,
+		Tooltip = 'Makes ocean look shinier and more realistic'
 	})
 	
 	EnhancedOcean:CreateSlider({
 		Name = 'Reflectance',
 		Min = 0,
 		Max = 1,
-		Default = 0.5,
+		Default = 0.6,
 		Decimal = 100,
 		Function = function(val)
-			local map = workspace:FindFirstChild('Map')
-			if map then
-				local function updateReflectance(obj)
-					if obj:IsA('Part') or obj:IsA('MeshPart') or obj:IsA('UnionOperation') then
-						if obj.Material == Enum.Material.Glass and (string.lower(obj.Name):find('water') or originalOceanSettings[obj]) then
-							obj.Reflectance = val
-						end
-					end
-					for _, child in ipairs(obj:GetChildren()) do
-						updateReflectance(child)
-					end
+			for _, part in ipairs(modifiedParts) do
+				if part and part.Parent then
+					part.Reflectance = val
 				end
-				updateReflectance(map)
 			end
 		end
 	})
@@ -42235,22 +42225,28 @@ run(function()
 		Name = 'Transparency',
 		Min = 0,
 		Max = 1,
-		Default = 0.1,
+		Default = 0.15,
 		Decimal = 100,
 		Function = function(val)
-			local map = workspace:FindFirstChild('Map')
-			if map then
-				local function updateTransparency(obj)
-					if obj:IsA('Part') or obj:IsA('MeshPart') or obj:IsA('UnionOperation') then
-						if obj.Material == Enum.Material.Glass and (string.lower(obj.Name):find('water') or originalOceanSettings[obj]) then
-							obj.Transparency = val
-						end
-					end
-					for _, child in ipairs(obj:GetChildren()) do
-						updateTransparency(child)
-					end
+			for _, part in ipairs(modifiedParts) do
+				if part and part.Parent then
+					part.Transparency = val
 				end
-				updateTransparency(map)
+			end
+		end
+	})
+	
+	EnhancedOcean:CreateColorSlider({
+		Name = 'Water Color',
+		DefaultHue = 0.55,
+		DefaultSat = 0.87,
+		DefaultValue = 0.63,
+		Function = function(hue, sat, val)
+			local color = Color3.fromHSV(hue, sat, val)
+			for _, part in ipairs(modifiedParts) do
+				if part and part.Parent and part:IsA('Part') then
+					part.Color = color
+				end
 			end
 		end
 	})
