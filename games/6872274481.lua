@@ -42092,7 +42092,7 @@ run(function()
                     local moveBlur = math.clamp(moveDelta * 2.2, 0, 15)
                     lastPosition = pos
 
-                    local targetBlur = math.clamp(rotBlur + moveBlur, 0, 25)
+                    local targetBlur = math.clamp(rotBlur + moveBlur, 0, 25 * Intensity.Value)
                     currentBlur = lerp(currentBlur, targetBlur, 0.2)
                     blur.Size = currentBlur
                 end)
@@ -42111,5 +42111,13 @@ run(function()
         end,
         Default = false,
         Tooltip = "Self Explanatory"
+    })
+
+    Intensity = MotionBlur:CreateSlider({
+        Name = "Intensity",
+        Min = 0.1,
+        Max = 2,
+        Default = 1,
+        Decimal = 1
     })
 end)
