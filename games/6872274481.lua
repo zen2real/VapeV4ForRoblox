@@ -4043,8 +4043,6 @@ run(function()
 	local lastTargetCheck = 0
 	local cachedTargetResult = false
 	local targetCheckCooldown = 0.5
-	local shouldCheckHorizontal = true
-	local shouldCheckVertical = true
 	local tick = tick
 	
 	Velocity = vape.Categories.Combat:CreateModule({
@@ -4070,10 +4068,10 @@ run(function()
 						if now - lastTargetCheck > targetCheckCooldown then
 							lastTargetCheck = now
 							local nearbyTargets = entitylib.EntityPosition({
-								Range = 50,
-								Part = 'RootPart',
-								Players = true
-							})
+							Range = 50,
+							Part = 'RootPart',
+							Players = true
+						})
 							cachedTargetResult = nearbyTargets ~= nil
 						end
 						targetCheckPassed = cachedTargetResult
@@ -4113,10 +4111,7 @@ run(function()
 		Min = 0,
 		Max = 100,
 		Default = 100,
-		Suffix = '%',
-		Function = function(value)
-			shouldCheckHorizontal = value ~= 100
-		end
+		Suffix = '%'
 	})
 	
 	HorizontalChance = Velocity:CreateSlider({
@@ -4132,10 +4127,7 @@ run(function()
 		Min = 0,
 		Max = 100,
 		Default = 100,
-		Suffix = '%',
-		Function = function(value)
-			shouldCheckVertical = value ~= 100
-		end
+		Suffix = '%'
 	})
 	
 	VerticalChance = Velocity:CreateSlider({
