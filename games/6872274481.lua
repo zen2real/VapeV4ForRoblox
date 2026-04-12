@@ -42128,7 +42128,7 @@ run(function()
     })
 end)
 run(function()
-	local Ambience1 = vape.Categories.R:CreateModule({
+	local Ambience1 = vape.Categories.Render:CreateModule({
 		Name = "Ambience 1",
 		Function = function(callback)
 			local lighting = game:GetService("Lighting")
