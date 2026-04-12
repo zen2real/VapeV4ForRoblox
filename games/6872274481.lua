@@ -42129,13 +42129,13 @@ run(function()
 end)
 run(function()
 	local Ambience1 = vape.Categories.Render:CreateModule({
-		Name = "Ambience 1",
+		Name = "kwada skybox",
 		Function = function(callback)
 			local lighting = game:GetService("Lighting")
 			if callback then
 				local sky = Instance.new("Sky")
 				sky.Name = "Ambience1_Sky"
-				local id = "rbxassetid://122785120445164"
+				local id = "rbxassetid://85545898804453"
 				sky.SkyboxBk = id
 				sky.SkyboxDn = id
 				sky.SkyboxFt = id
