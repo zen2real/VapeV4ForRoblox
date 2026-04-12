@@ -4087,37 +4087,15 @@ run(function()
 						return old(root, mass, dir, knockback, ...)
 					end
 					
-					if knockback then
-						local newKnockback = knockback
-						
-						if reduceHorizontal and horizValue ~= 100 then
-							newKnockback = {
-								horizontal = (knockback.horizontal or 1) * (horizValue / 100),
-								vertical = knockback.vertical or 1
-							}
-							knockback = newKnockback
-						end
-						
-						if reduceVertical and vertValue ~= 100 then
-							if newKnockback == knockback then
-								newKnockback = {
-									horizontal = knockback.horizontal or 1,
-									vertical = (knockback.vertical or 1) * (vertValue / 100)
-								}
-							else
-								newKnockback.vertical = (knockback.vertical or 1) * (vertValue / 100)
-							end
-							knockback = newKnockback
-						end
-					else
-						local horizMult = (reduceHorizontal and horizValue ~= 100) and (horizValue / 100) or 1
-						local vertMult = (reduceVertical and vertValue ~= 100) and (vertValue / 100) or 1
-						
-						knockback = {
-							horizontal = horizMult,
-							vertical = vertMult
-						}
+local newKnockback = {}
+				if type(knockback) == 'table' then
+					for k, v in pairs(knockback) do
+						newKnockback[k] = v
 					end
+				end
+				newKnockback.horizontal = (newKnockback.horizontal or 1) * ((reduceHorizontal and horizValue ~= 100) and (horizValue / 100) or 1)
+				newKnockback.vertical = (newKnockback.vertical or 1) * ((reduceVertical and vertValue ~= 100) and (vertValue / 100) or 1)
+				knockback = newKnockback
 					
 					return old(root, mass, dir, knockback, ...)
 				end
