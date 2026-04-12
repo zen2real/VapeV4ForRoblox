@@ -3055,7 +3055,7 @@ run(function()
                         end
                     end))
 
-                     for _, v in {'2', '5'} do
+                     for _, v in {'1', '2', '3', '4', '5'} do
                         pcall(function()
                             AutoClicker:Clean(lplr.PlayerGui.MobileUI[v].MouseButton1Down:Connect(AutoClick))
                             AutoClicker:Clean(lplr.PlayerGui.MobileUI[v].MouseButton1Up:Connect(StopClick))
