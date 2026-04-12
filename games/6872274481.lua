@@ -4222,6 +4222,48 @@ run(function()
     end)
 end)
 	
+run(function()
+	local Velocity
+	local Horizontal
+	local Vertical
+	local old
+	
+	Velocity = vape.Categories.Combat:CreateModule({
+		Name = 'Velocity',
+		Function = function(callback)
+			if callback then
+				old = bedwars.KnockbackUtil.applyKnockback
+				bedwars.KnockbackUtil.applyKnockback = function(root, mass, dir, knockback, ...)
+					if type(knockback) == 'table' then
+						knockback.horizontal = knockback.horizontal * (Horizontal.Value / 100)
+						knockback.vertical = knockback.vertical * (Vertical.Value / 100)
+					end
+					return old(root, mass, dir, knockback, ...)
+				end
+			else
+				bedwars.KnockbackUtil.applyKnockback = old
+			end
+		end,
+		Tooltip = 'Reduces knockback taken'
+	})
+	
+	Horizontal = Velocity:CreateSlider({
+		Name = 'Horizontal',
+		Min = 0,
+		Max = 100,
+		Default = 0,
+		Suffix = '%'
+	})
+	
+	Vertical = Velocity:CreateSlider({
+		Name = 'Vertical',
+		Min = 0,
+		Max = 100,
+		Default = 0,
+		Suffix = '%'
+	})
+end)
+	
 local Fly
 local LongJump
 run(function()
