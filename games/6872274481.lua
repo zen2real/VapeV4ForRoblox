@@ -41897,7 +41897,6 @@ run(function()
 	HotbarRoundRadius.Object.Visible = false;
 	HotbarHighlightColor.Object.Visible = false;
 end);
-
 run(function()
 	local FakeLag = {Enabled = false}
 	local FakeLagUsage = {Value = "Blatant"}
@@ -41917,7 +41916,7 @@ run(function()
 		task.wait(FakeLagSpeed5.Value / 10)
 		entitylib.character.Humanoid.WalkSpeed = FakeLagSpeed3.Value
 	end
-	FakeLag = vape.Categories.Blatent:CreateModule({
+	FakeLag = vape.Categories.Combat:CreateModule({
 		Name = "FakeLag",
         HoverText = "Makes people think you're laggy",
 		Function = function(callback)
