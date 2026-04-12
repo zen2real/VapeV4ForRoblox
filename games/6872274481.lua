@@ -38371,11 +38371,8 @@ run(function()
             else
                 -- Full Reset
                 if currentWaterCFrame then Terrain:FillBlock(currentWaterCFrame, waterSize, Enum.Material.Air) end
-                if starEmitter then starEmitter:Destroy() starEmitter = nil end
                 Lighting.ClockTime = oldClock
                 Lighting.Brightness = oldBrightness
-                for _, v in pairs(Lighting:GetChildren()) do if v:IsA("Sky") then v:Destroy() end end
-                if oldSky then oldSky:Clone().Parent = Lighting end
             end
         end
     })
@@ -38389,7 +38386,6 @@ run(function()
                     local hue = (tick() % settings.RainbowSpeed) / settings.RainbowSpeed
                     local color = Color3.fromHSV(hue, 0.7, 1)
                     Terrain.WaterColor = color
-                    if starEmitter then starEmitter.Color = ColorSequence.new(color) end
                     RunService.Heartbeat:Wait()
                 end
                 if not callback and VoidOcean.Enabled then 
@@ -38399,26 +38395,8 @@ run(function()
         end
     })
 
-    VoidOcean:CreateToggle({
-        Name = "Realistic Sky",
-        Function = function(callback)
-            if callback and VoidOcean.Enabled then
-                for _, v in pairs(Lighting:GetChildren()) do if v:IsA("Sky") then v:Destroy() end end
-                local sky = Instance.new("Sky")
-                sky.SkyboxBk = "rbxassetid://10128014521"; sky.SkyboxDn = "rbxassetid://10128014839"; sky.SkyboxFt = "rbxassetid://10128015112"
-                sky.SkyboxLf = "rbxassetid://10128015385"; sky.SkyboxRt = "rbxassetid://10128015582"; sky.SkyboxUp = "rbxassetid://10128015814"
-                sky.MoonAngularSize = settings.MoonSize
-                sky.Parent = Lighting
-            elseif not callback then
-                for _, v in pairs(Lighting:GetChildren()) do if v:IsA("Sky") then v:Destroy() end end
-                if oldSky then oldSky:Clone().Parent = Lighting end
-            end
-        end
-    })
-
-    -- THE SLIDER SUITE (Control Everything)
+    -- OCEAN SLIDERS
     
-    -- Ocean Controls
     VoidOcean:CreateSlider({ Name = "Ocean Height", Min = -150, Max = 50, Default = -40, Function = function(val)
         settings.Height = val
         if VoidOcean.Enabled and currentWaterCFrame then
@@ -38437,47 +38415,6 @@ run(function()
     VoidOcean:CreateSlider({ Name = "Wave Speed", Min = 0, Max = 100, Default = 8, Function = function(val) 
         settings.WaveSpeed = val 
         if VoidOcean.Enabled then Terrain.WaterWaveSpeed = val end 
-    end})
-
-    -- Lighting Controls (Darkness/Brightness)
-    VoidOcean:CreateSlider({ Name = "Time (Darkness)", Min = 0, Max = 24, Default = 14, Function = function(val)
-        settings.ClockTime = val
-        if VoidOcean.Enabled then 
-            Lighting.ClockTime = val 
-            -- Auto-handle Stars if it gets dark
-            local root = lplr.Character and lplr.Character:FindFirstChild("HumanoidRootPart")
-            if (val < 6 or val > 18) and not starEmitter and root then
-                starEmitter = Instance.new("ParticleEmitter", root)
-                starEmitter.Texture = "rbxassetid://5030434751"
-                starEmitter.Size = NumberSequence.new(settings.StarSize, 0)
-                starEmitter.Rate = settings.StarAmount
-            elseif (val >= 6 and val <= 18) and starEmitter then
-                starEmitter:Destroy() starEmitter = nil
-            end
-        end
-    end})
-
-    VoidOcean:CreateSlider({ Name = "World Brightness", Min = 0, Max = 10, Default = 2, Function = function(val)
-        settings.Brightness = val
-        if VoidOcean.Enabled then Lighting.Brightness = val end
-    end})
-
-    -- Sky & Moon Controls
-    VoidOcean:CreateSlider({ Name = "Moon Size", Min = 0, Max = 100, Default = 20, Function = function(val)
-        settings.MoonSize = val
-        local sky = Lighting:FindFirstChildOfClass("Sky")
-        if sky then sky.MoonAngularSize = val end
-    end})
-
-    -- Star Controls
-    VoidOcean:CreateSlider({ Name = "Star Size", Min = 0.1, Max = 10, Default = 0.5, Function = function(val)
-        settings.StarSize = val
-        if starEmitter then starEmitter.Size = NumberSequence.new(val, 0) end
-    end})
-
-    VoidOcean:CreateSlider({ Name = "Star Amount", Min = 0, Max = 500, Default = 50, Function = function(val)
-        settings.StarAmount = val
-        if starEmitter then starEmitter.Rate = val end
     end})
 
 end)
