@@ -41935,127 +41935,28 @@ run(function()
 		end
 	})
 end)
-local function getTelepearlItem()
-    for _, item in store.inventory.inventory.items do
-        if not item or not item.itemType then continue end
-        local itemType = item.itemType:lower()
-        if itemType == 'telepearl' or itemType == 'teleport_pearl' or itemType:find('pearl', 1, true) then
-            local itemMeta = bedwars.ItemMeta[item.itemType]
-            if itemMeta and itemMeta.projectileSource then
-                local projSource = itemMeta.projectileSource
-                local projectile = projSource.projectile or (projSource.projectileType and projSource.projectileType(nil))
-                if projectile == 'telepearl' or itemType == 'telepearl' or itemType == 'teleport_pearl' then
-                    return item, itemMeta, projectile
-                end
-            else
-                return item, itemMeta, itemType
-            end
-        end
-    end
-end
-
-local function getAmmoForProjectile(check)
-    for _, item in store.inventory.inventory.items do
-        if check.ammoItemTypes and table.find(check.ammoItemTypes, item.itemType) then
-            return item.itemType
-        end
-    end
-end
-
-local function findSafeTeleportPosition()
-    if not entitylib.isAlive or not entitylib.character or not entitylib.character.RootPart then
-        return nil
-    end
-
-    local origin = entitylib.character.RootPart.Position
-    local back = entitylib.character.RootPart.CFrame.LookVector * -1
-    local rayParams = RaycastParams.new()
-    rayParams.FilterType = Enum.RaycastFilterType.Exclude
-    rayParams.FilterDescendantsInstances = {entitylib.character.Character}
-    rayParams.RespectCanCollide = false
-
-    local candidates = {
-        origin + back * 10 + Vector3.new(0, 8, 0),
-        origin + back * 6 + Vector3.new(0, 8, 0),
-        origin + Vector3.new(0, 12, 0),
-        origin + back * 14 + Vector3.new(0, 6, 0)
-    }
-
-    for _, pos in ipairs(candidates) do
-        local ray = workspace:Raycast(pos + Vector3.new(0, 20, 0), Vector3.new(0, -80, 0), rayParams)
-        if ray and ray.Position.Y > origin.Y - 20 then
-            return ray.Position + Vector3.new(0, 3, 0)
-        end
-    end
-
-    return origin + Vector3.new(0, 14, 0)
-end
-
-local function shootTelepearl(item, projectile, itemMeta, targetPos)
-    if not item or not projectile or not itemMeta or not entitylib.character or not entitylib.character.RootPart then
-        return false
-    end
-
-    local origin = entitylib.character.RootPart.Position
-    local ammo = getAmmoForProjectile(itemMeta.projectileSource)
-    local meta = bedwars.ProjectileMeta[projectile]
-    if not meta then
-        return false
-    end
-
-    local projectileRemote = bedwars.Client:Get(remotes.FireProjectile).instance
-    local projSpeed, gravity = meta.launchVelocity, meta.gravitationalAcceleration or 196.2
-    local bowRelX = bedwars.BowConstantsTable.RelX or 0
-    local bowRelY = bedwars.BowConstantsTable.RelY or 0
-    local bowRelZ = bedwars.BowConstantsTable.RelZ or 0
-    local dir = (targetPos - origin).Unit
-    local newlook = CFrame.new(origin, targetPos) * CFrame.new(Vector3.new(bowRelX, bowRelY, bowRelZ))
-    local calc = prediction.SolveTrajectory(newlook.p, projSpeed, gravity, targetPos, Vector3.zero, workspace.Gravity, 0, nil, RaycastParams.new())
-    if not calc then
-        calc = targetPos
-    end
-
-    local shootPosition = (CFrame.new(origin, calc) * CFrame.new(Vector3.new(-bowRelX, -bowRelY, -bowRelZ))).Position
-    local id = httpService:GenerateGUID(true)
-    bedwars.ProjectileController:createLocalProjectile(meta, ammo, projectile, shootPosition, id, dir * projSpeed, {drawDurationSeconds = 1})
-    local res = projectileRemote:InvokeServer(item.tool, ammo, projectile, shootPosition, origin, dir * projSpeed, id, {drawDurationSeconds = 1, shotId = httpService:GenerateGUID(false)}, workspace:GetServerTimeNow() - 0.045)
-    return res and res.Parent ~= nil
-end
-
-local function teleportToSafety()
-    local item, itemMeta, projectile = getTelepearlItem()
-    if item and itemMeta and projectile then
-        local targetPos = findSafeTeleportPosition()
-        if targetPos then
-            return shootTelepearl(item, projectile, itemMeta, targetPos)
-        end
-    end
-
-    if remotes and remotes.TeleportToLobby then
-        bedwars.Client:Get(remotes.TeleportToLobby):FireServer()
-        return true
-    end
-    return false
-end
-
-local AutoEscape = vape.Categories.Utility:CreateModule({
-    Name = 'Auto Escape',
-    Tooltip = 'Auto teleport to safety when under 50 HP.',
+local OpenConsole = vape.Categories.Utility:CreateModule({
+    Name = 'Open Console',
+    Tooltip = 'Open console or chat for players without chat.',
     Function = function(callback)
-        if callback then
-            AutoEscape.Connection = runService.Heartbeat:Connect(function()
-                if not entitylib.isAlive or not entitylib.character or not entitylib.character.Health then
-                    return
-                end
+        -- This module only provides a button.
+    end
+})
 
-                if entitylib.character.Health < 50 then
-                    teleportToSafety()
-                end
-            end)
-            AutoEscape:Clean(AutoEscape.Connection)
-        elseif AutoEscape.Connection then
-            AutoEscape.Connection:Disconnect()
-            AutoEscape.Connection = nil
-        end
+OpenConsole:CreateButton({
+    Name = 'Open console',
+    Function = function()
+        -- Try enabling chat if possible.
+        pcall(function()
+            starterGui:SetCoreGuiEnabled(Enum.CoreGuiType.Chat, true)
+        end)
+
+        -- Try opening the developer console.
+        pcall(function()
+            if VirtualInputManager and VirtualInputManager.SendKeyEvent then
+                VirtualInputManager:SendKeyEvent(true, 'F9', false, game)
+                VirtualInputManager:SendKeyEvent(false, 'F9', false, game)
+            end
+        end)
     end
 })
