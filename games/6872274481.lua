@@ -42114,231 +42114,144 @@ run(function()
 	})
 end)
 
--- ============ Ocean Enhancement System ============
+-- ============ Enhanced Ocean System ============
 run(function()
-	local RealisticOcean
-	local oceanEnabled = false
-	local waveAmplitude = 1
-	local waveSpeed = 2
-	local oceanContainer = nil
-	local waterSurface = nil
-	local waveParticles = {}
-	local oceanDepth = 300
+	local EnhancedOcean
+	local originalOceanSettings = {}
 	
-	-- Create a more realistic ocean in the void
-	local function createRealisticOcean()
-		-- Create main container
-		oceanContainer = Instance.new('Folder')
-		oceanContainer.Name = 'RealisticOcean'
-		oceanContainer.Parent = workspace
-		
-		-- Create main water body with better material
-		waterSurface = Instance.new('Part')
-		waterSurface.Name = 'OceanSurface'
-		waterSurface.Shape = Enum.PartType.Block
-		waterSurface.Size = Vector3.new(4000, 100, 4000)
-		waterSurface.Material = Enum.Material.Water
-		waterSurface.Color = Color3.fromRGB(15, 85, 135)
-		waterSurface.CanCollide = true
-		waterSurface.CanQuery = true
-		waterSurface.CFrame = CFrame.new(0, -oceanDepth, 0)
-		waterSurface.Transparency = 0.15
-		waterSurface.Parent = oceanContainer
-		
-		-- Create optimized wave mesh - much fewer pieces for performance
-		local waveGridSize = 4
-		for ix = -waveGridSize, waveGridSize do
-			for iz = -waveGridSize, waveGridSize do
-				local waveMesh = Instance.new('Part')
-				waveMesh.Name = 'WaveMesh'
-				waveMesh.Shape = Enum.PartType.Block
-				waveMesh.Size = Vector3.new(200, 5, 200)
-				waveMesh.Material = Enum.Material.SmoothPlastic
-				waveMesh.Color = Color3.fromRGB(20, 100, 150)
-				waveMesh.CanCollide = false
-				waveMesh.CanQuery = false
-				waveMesh.CFrame = CFrame.new(ix * 200, -oceanDepth + 30, iz * 200)
-				waveMesh.Transparency = 0.3
-				waveMesh.Parent = oceanContainer
-				
-				table.insert(waveParticles, {
-					part = waveMesh,
-					baseX = ix * 200,
-					baseZ = iz * 200,
-					offsetX = ix,
-					offsetZ = iz
-				})
-			end
-		end
-		
-		-- Add water spray/foam effects on surface
-		local sprayAttachment = Instance.new('Attachment')
-		sprayAttachment.Parent = waterSurface
-		sprayAttachment.Position = Vector3.new(0, 50, 0)
-		
-		local spray = Instance.new('ParticleEmitter')
-		spray.Name = 'OceanSpray'
-		spray.Texture = 'rbxasset://textures/particles/water_splash.dds'
-		spray.Speed = NumberRange.new(15, 25)
-		spray.Lifetime = NumberRange.new(4, 8)
-		spray.Rate = 20
-		spray.Rotation = NumberRange.new(0, 360)
-		spray.RotSpeed = NumberRange.new(-180, 180)
-		spray.Transparency = NumberSequence.new({
-			NumberSequenceKeypoint.new(0, 0.5),
-			NumberSequenceKeypoint.new(0.3, 0.2),
-			NumberSequenceKeypoint.new(1, 1)
-		})
-		spray.Size = NumberSequence.new({
-			NumberSequenceKeypoint.new(0, 0.7),
-			NumberSequenceKeypoint.new(0.5, 1.2),
-			NumberSequenceKeypoint.new(1, 0.3)
-		})
-		spray.Color = ColorSequence.new(Color3.fromRGB(240, 248, 255))
-		spray.Acceleration = Vector3.new(0, -5, 0)
-		spray.Drag = 3
-		spray.Parent = sprayAttachment
-		
-		-- Add foam particles for more detail
-		local foamAttach = Instance.new('Attachment')
-		foamAttach.Parent = waterSurface
-		foamAttach.Position = Vector3.new(0, 40, 0)
-		
-		local foam = Instance.new('ParticleEmitter')
-		foam.Name = 'OceanFoam'
-		foam.Texture = 'rbxasset://textures/particles/smoke_main.dds'
-		foam.Speed = NumberRange.new(5, 12)
-		foam.Lifetime = NumberRange.new(8, 15)
-		foam.Rate = 15
-		foam.Transparency = NumberSequence.new({
-			NumberSequenceKeypoint.new(0, 0.6),
-			NumberSequenceKeypoint.new(0.5, 0.4),
-			NumberSequenceKeypoint.new(1, 1)
-		})
-		foam.Size = NumberSequence.new({
-			NumberSequenceKeypoint.new(0, 0.5),
-			NumberSequenceKeypoint.new(0.5, 1),
-			NumberSequenceKeypoint.new(1, 0.2)
-		})
-		foam.Color = ColorSequence.new(Color3.fromRGB(200, 220, 255))
-		foam.Enabled = true
-		foam.Parent = foamAttach
-	end
-	
-	-- Animate waves with realistic patterns
-	local function animateWaves()
-		if RealisticOcean then
-			RealisticOcean:Clean(runService.RenderStepped:Connect(function()
-				if not oceanEnabled or not waterSurface or not waterSurface.Parent then return end
-				
-				local time = tick()
-				
-				-- Main ocean wave motion
-				local mainWave = math.sin(time * waveSpeed) * waveAmplitude + 
-								math.cos(time * waveSpeed * 0.7) * (waveAmplitude * 0.7)
-				waterSurface.CFrame = CFrame.new(0, -oceanDepth + mainWave, 0)
-				
-				-- Animate individual wave mesh pieces (optimized)
-				for _, waveData in ipairs(waveParticles) do
-					if waveData.part and waveData.part.Parent then
-						local distFromCenter = math.sqrt(waveData.offsetX^2 + waveData.offsetZ^2)
+	EnhancedOcean = vape.Categories.World:CreateModule({
+		Name = 'Enhanced Ocean',
+		Function = function(callback)
+			if callback then
+				-- Find all water in the map and enhance it
+				local map = workspace:FindFirstChild('Map')
+				if map then
+					local function enhanceWater(obj)
+						if obj:IsA('Part') or obj:IsA('MeshPart') or obj:IsA('UnionOperation') then
+							if obj.Material == Enum.Material.Water or string.lower(obj.Name):find('water') or string.lower(obj.Name):find('ocean') then
+								-- Store original settings
+								if not originalOceanSettings[obj] then
+									originalOceanSettings[obj] = {
+										Material = obj.Material,
+										Color = obj.Color,
+										Transparency = obj.Transparency,
+										Reflectance = obj.Reflectance,
+										Size = obj.Size
+									}
+								end
+								
+								-- Enhanced ocean settings
+								obj.Material = Enum.Material.Glass
+								obj.Color = Color3.fromRGB(20, 100, 160)
+								obj.Transparency = 0.1
+								obj.Reflectance = 0.5
+								
+								-- Increase resolution if possible
+								if obj:IsA('Part') then
+									obj.TopSurface = Enum.SurfaceType.Smooth
+									obj.BottomSurface = Enum.SurfaceType.Smooth
+									obj.FrontSurface = Enum.SurfaceType.Smooth
+									obj.BackSurface = Enum.SurfaceType.Smooth
+									obj.LeftSurface = Enum.SurfaceType.Smooth
+									obj.RightSurface = Enum.SurfaceType.Smooth
+								end
+							end
+						end
 						
-						-- Simplified wave pattern for performance
-						local wave1 = math.sin(time * waveSpeed + waveData.offsetX * 0.15) * waveAmplitude
-						local wave2 = math.cos(time * waveSpeed * 0.8 + waveData.offsetZ * 0.15) * (waveAmplitude * 0.8)
-						
-						local totalWave = wave1 + wave2
-						
-						-- Apply wave motion
-						waveData.part.CFrame = CFrame.new(waveData.baseX, -oceanDepth + 30 + totalWave, waveData.baseZ)
+						-- Search children
+						for _, child in ipairs(obj:GetChildren()) do
+							enhanceWater(child)
+						end
+					end
+					
+					enhanceWater(map)
+				end
+			else
+				-- Restore original settings
+				for obj, settings in pairs(originalOceanSettings) do
+					if obj and obj.Parent then
+						obj.Material = settings.Material
+						obj.Color = settings.Color
+						obj.Transparency = settings.Transparency
+						obj.Reflectance = settings.Reflectance
 					end
 				end
-			end))
-		end
-	end
-	
-	RealisticOcean = vape.Categories.World:CreateModule({
-		Name = 'Realistic Ocean',
-		Function = function(callback)
-			oceanEnabled = callback
-			
-			if callback then
-				-- Create ocean if it doesn't exist
-				if not oceanContainer or not oceanContainer.Parent then
-					createRealisticOcean()
-				end
-				
-				-- Make it visible
-				if oceanContainer then
-					oceanContainer.Parent = workspace
-				end
-				
-				-- Set realistic ocean lighting
-				local lighting = game:GetService('Lighting')
-				lighting.Ambient = Color3.fromRGB(120, 160, 200)
-				lighting.OutdoorAmbient = Color3.fromRGB(120, 160, 200)
-				
-				-- Start wave animation
-				animateWaves()
-			else
-				-- Hide ocean
-				if oceanContainer and oceanContainer.Parent then
-					oceanContainer.Parent = nil
-				end
+				table.clear(originalOceanSettings)
 			end
 		end,
-		Tooltip = 'Realistic ocean with waves and foam'
+		Tooltip = 'Enhances original ocean with better reflectance and resolution'
 	})
 	
-	RealisticOcean:CreateSlider({
-		Name = 'Wave Height',
-		Min = 0.1,
-		Max = 3,
-		Default = 1,
-		Decimal = 10,
-		Function = function(val)
-			waveAmplitude = val
+	EnhancedOcean:CreateColorSlider({
+		Name = 'Water Color',
+		DefaultHue = 0.55,
+		DefaultSat = 0.87,
+		DefaultValue = 0.63,
+		DefaultOpacity = 1,
+		Function = function(hue, sat, val, opacity)
+			local color = Color3.fromHSV(hue, sat, val)
+			local map = workspace:FindFirstChild('Map')
+			if map then
+				local function updateWaterColor(obj)
+					if obj:IsA('Part') or obj:IsA('MeshPart') or obj:IsA('UnionOperation') then
+						if obj.Material == Enum.Material.Glass and (string.lower(obj.Name):find('water') or originalOceanSettings[obj]) then
+							obj.Color = color
+						end
+					end
+					for _, child in ipairs(obj:GetChildren()) do
+						updateWaterColor(child)
+					end
+				end
+				updateWaterColor(map)
+			end
 		end
 	})
 	
-	RealisticOcean:CreateSlider({
-		Name = 'Wave Speed',
-		Min = 0.5,
-		Max = 5,
-		Default = 2,
-		Decimal = 10,
-		Function = function(val)
-			waveSpeed = val
-		end
-	})
-	
-	RealisticOcean:CreateSlider({
-		Name = 'Ocean Depth',
-		Min = 100,
-		Max = 1000,
-		Default = 300,
+	EnhancedOcean:CreateSlider({
+		Name = 'Reflectance',
+		Min = 0,
+		Max = 1,
+		Default = 0.5,
 		Decimal = 100,
 		Function = function(val)
-			oceanDepth = val
-			if waterSurface then
-				waterSurface.CFrame = CFrame.new(0, -oceanDepth, 0)
-				-- Update all wave meshes
-				for _, waveData in ipairs(waveParticles) do
-					if waveData.part then
-						waveData.part.CFrame = CFrame.new(waveData.baseX, -oceanDepth + 30, waveData.baseZ)
+			local map = workspace:FindFirstChild('Map')
+			if map then
+				local function updateReflectance(obj)
+					if obj:IsA('Part') or obj:IsA('MeshPart') or obj:IsA('UnionOperation') then
+						if obj.Material == Enum.Material.Glass and (string.lower(obj.Name):find('water') or originalOceanSettings[obj]) then
+							obj.Reflectance = val
+						end
+					end
+					for _, child in ipairs(obj:GetChildren()) do
+						updateReflectance(child)
 					end
 				end
+				updateReflectance(map)
 			end
 		end
 	})
 	
-	RealisticOcean:CreateToggle({
-		Name = 'Enhanced Transparency',
-		Function = function(callback)
-			if waterSurface then
-				waterSurface.Transparency = callback and 0.1 or 0.2
+	EnhancedOcean:CreateSlider({
+		Name = 'Transparency',
+		Min = 0,
+		Max = 1,
+		Default = 0.1,
+		Decimal = 100,
+		Function = function(val)
+			local map = workspace:FindFirstChild('Map')
+			if map then
+				local function updateTransparency(obj)
+					if obj:IsA('Part') or obj:IsA('MeshPart') or obj:IsA('UnionOperation') then
+						if obj.Material == Enum.Material.Glass and (string.lower(obj.Name):find('water') or originalOceanSettings[obj]) then
+							obj.Transparency = val
+						end
+					end
+					for _, child in ipairs(obj:GetChildren()) do
+						updateTransparency(child)
+					end
+				end
+				updateTransparency(map)
 			end
-		end,
-		Default = true
+		end
 	})
 end)
