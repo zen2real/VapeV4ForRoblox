@@ -38357,7 +38357,7 @@ run(function()
     local oldBrightness = Lighting.Brightness
 
     local VoidOcean = vape.Categories.Render:CreateModule({
-        Name = "VoidOcean",
+        Name = "Realistic Ocean",
         Function = function(callback)
             if callback then
                 Terrain.WaterColor = Color3.fromRGB(12, 60, 110)
