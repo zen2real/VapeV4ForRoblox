@@ -42067,6 +42067,18 @@ run(function()
                     return a + (b - a) * t
                 end
 
+                local function updateCharacter(newCharacter)
+                    character = newCharacter
+                    root = character:WaitForChild("HumanoidRootPart")
+                    lastPosition = root.Position
+                end
+
+                if player.Character then
+                    updateCharacter(player.Character)
+                end
+
+                local characterAddedConnection = player.CharacterAdded:Connect(updateCharacter)
+
                 MotionBlurConnection = RunService.RenderStepped:Connect(function()
                     if not root or not root.Parent then return end
                     local look = camera.CFrame.LookVector
@@ -42084,6 +42096,8 @@ run(function()
                     currentBlur = lerp(currentBlur, targetBlur, 0.2)
                     blur.Size = currentBlur
                 end)
+
+                MotionBlur:Clean(characterAddedConnection)
             else
                 if MotionBlurEffect then
                     MotionBlurEffect:Destroy()
