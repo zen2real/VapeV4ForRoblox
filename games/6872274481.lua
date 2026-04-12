@@ -6005,7 +6005,7 @@ run(function()
                     end)
                 end
 
-                if Animation.Enabled and not (identifyexecutor and table.find({'Argon', 'Delta'}, ({identifyexecutor()})[1])) then
+                if Animation.Enabled and not (identifyexecutor and table.find({'Argon'}, ({identifyexecutor()})[1])) then
                     local fake = {
                         Controllers = {
                             ViewmodelController = {
@@ -6971,7 +6971,7 @@ run(function()
 					end)
 				end
 
-				if Animation and Animation.Enabled and not (identifyexecutor and table.find({'Argon', 'Delta'}, ({identifyexecutor()})[1])) then
+				if Animation and Animation.Enabled and not (identifyexecutor and table.find({'Argon'}, ({identifyexecutor()})[1])) then
 					local fake = {
 						Controllers = {
 							ViewmodelController = {
