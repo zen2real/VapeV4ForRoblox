@@ -42118,89 +42118,114 @@ end)
 run(function()
 	local RealisticOcean
 	local oceanEnabled = false
-	local waveAmplitude = 0.5
-	local waveSpeed = 1.5
+	local waveAmplitude = 1
+	local waveSpeed = 2
 	local oceanContainer = nil
 	local waterSurface = nil
 	local waveParticles = {}
+	local oceanDepth = 1500
 	
-	-- Create ocean in the void
-	local function createOceanInVoid()
+	-- Create a more realistic ocean in the void
+	local function createRealisticOcean()
 		-- Create main container
 		oceanContainer = Instance.new('Folder')
 		oceanContainer.Name = 'RealisticOcean'
 		oceanContainer.Parent = workspace
 		
-		-- Create large water surface at the void (way below the map)
+		-- Create main water body with better material
 		waterSurface = Instance.new('Part')
 		waterSurface.Name = 'OceanSurface'
 		waterSurface.Shape = Enum.PartType.Block
-		waterSurface.Size = Vector3.new(2000, 50, 2000)
+		waterSurface.Size = Vector3.new(4000, 100, 4000)
 		waterSurface.Material = Enum.Material.Water
-		waterSurface.Color = Color3.fromRGB(25, 100, 150)
+		waterSurface.Color = Color3.fromRGB(15, 85, 135)
 		waterSurface.CanCollide = true
 		waterSurface.CanQuery = true
-		waterSurface.CFrame = CFrame.new(0, -1500, 0)  -- Place in void
-		waterSurface.Transparency = 0.2
+		waterSurface.CFrame = CFrame.new(0, -oceanDepth, 0)
+		waterSurface.Transparency = 0.15
 		waterSurface.Parent = oceanContainer
 		
-		-- Add smooth surface for realistic reflection
-		local surfaceMesh = Instance.new('Part')
-		surfaceMesh.Name = 'WaterReflection'
-		surfaceMesh.Shape = Enum.PartType.Block
-		surfaceMesh.Size = Vector3.new(2000, 2, 2000)
-		surfaceMesh.Material = Enum.Material.SmoothPlastic
-		surfaceMesh.Color = Color3.fromRGB(30, 110, 160)
-		surfaceMesh.CanCollide = false
-		surfaceMesh.CFrame = CFrame.new(0, -1475, 0)
-		surfaceMesh.Transparency = 0.15
-		surfaceMesh.Parent = oceanContainer
-		
-		-- Create wave particles across the surface for realistic look
-		local waveCount = 40
-		for i = 1, waveCount do
-			local angle = (i / waveCount) * math.pi * 2
-			local distance = 500 + (i % 10) * 50
-			local x = math.cos(angle) * distance
-			local z = math.sin(angle) * distance
-			
-			local wavePart = Instance.new('Part')
-			wavePart.Name = 'WaveEffect'
-			wavePart.Shape = Enum.PartType.Ball
-			wavePart.Size = Vector3.new(40, 40, 40)
-			wavePart.Material = Enum.Material.Neon
-			wavePart.Color = Color3.fromRGB(150, 200, 255)
-			wavePart.CanCollide = false
-			wavePart.CanQuery = false
-			wavePart.CFrame = CFrame.new(x, -1475, z)
-			wavePart.Transparency = 0.7
-			wavePart.Parent = oceanContainer
-			
-			table.insert(waveParticles, {part = wavePart, offsetX = x, offsetZ = z, index = i})
+		-- Create detailed wave mesh using multiple overlapping parts
+		local waveGridSize = 15
+		for ix = -waveGridSize, waveGridSize do
+			for iz = -waveGridSize, waveGridSize do
+				local waveMesh = Instance.new('Part')
+				waveMesh.Name = 'WaveMesh'
+				waveMesh.Shape = Enum.PartType.Block
+				waveMesh.Size = Vector3.new(100, 5, 100)
+				waveMesh.Material = Enum.Material.SmoothPlastic
+				waveMesh.Color = Color3.fromRGB(20, 100, 150)
+				waveMesh.CanCollide = false
+				waveMesh.CanQuery = false
+				waveMesh.CFrame = CFrame.new(ix * 100, -oceanDepth + 30, iz * 100)
+				waveMesh.Transparency = 0.3
+				waveMesh.Parent = oceanContainer
+				
+				table.insert(waveParticles, {
+					part = waveMesh,
+					baseX = ix * 100,
+					baseZ = iz * 100,
+					offsetX = ix,
+					offsetZ = iz
+				})
+			end
 		end
 		
-		-- Add foam particles
-		local foamAttach = Instance.new('Attachment')
-		foamAttach.Parent = waterSurface
-		foamAttach.Position = Vector3.new(0, 20, 0)
+		-- Add water spray/foam effects on surface
+		local sprayAttachment = Instance.new('Attachment')
+		sprayAttachment.Parent = waterSurface
+		sprayAttachment.Position = Vector3.new(0, 50, 0)
 		
-		local foam = Instance.new('ParticleEmitter')
-		foam.Texture = 'rbxasset://textures/particles/smoke_main.dds'
-		foam.Speed = NumberRange.new(8, 12)
-		foam.Lifetime = NumberRange.new(6, 10)
-		foam.Rate = 30
-		foam.Transparency = NumberSequence.new({
-			NumberSequenceKeypoint.new(0, 0.7),
-			NumberSequenceKeypoint.new(0.4, 0.4),
+		local spray = Instance.new('ParticleEmitter')
+		spray.Name = 'OceanSpray'
+		spray.Texture = 'rbxasset://textures/particles/water_splash.dds'
+		spray.Speed = NumberRange.new(15, 25)
+		spray.Lifetime = NumberRange.new(4, 8)
+		spray.Rate = 50
+		spray.Rotation = NumberRange.new(0, 360)
+		spray.RotSpeed = NumberRange.new(-180, 180)
+		spray.Transparency = NumberSequence.new({
+			NumberSequenceKeypoint.new(0, 0.5),
+			NumberSequenceKeypoint.new(0.3, 0.2),
 			NumberSequenceKeypoint.new(1, 1)
 		})
-		foam.Size = NumberSequence.new(1, 0.5)
-		foam.Color = ColorSequence.new(Color3.fromRGB(220, 230, 255))
+		spray.Size = NumberSequence.new({
+			NumberSequenceKeypoint.new(0, 0.7),
+			NumberSequenceKeypoint.new(0.5, 1.2),
+			NumberSequenceKeypoint.new(1, 0.3)
+		})
+		spray.Color = ColorSequence.new(Color3.fromRGB(240, 248, 255))
+		spray.Acceleration = Vector3.new(0, -5, 0)
+		spray.Drag = 3
+		spray.Parent = sprayAttachment
+		
+		-- Add foam particles for more detail
+		local foamAttach = Instance.new('Attachment')
+		foamAttach.Parent = waterSurface
+		foamAttach.Position = Vector3.new(0, 40, 0)
+		
+		local foam = Instance.new('ParticleEmitter')
+		foam.Name = 'OceanFoam'
+		foam.Texture = 'rbxasset://textures/particles/smoke_main.dds'
+		foam.Speed = NumberRange.new(5, 12)
+		foam.Lifetime = NumberRange.new(8, 15)
+		foam.Rate = 40
+		foam.Transparency = NumberSequence.new({
+			NumberSequenceKeypoint.new(0, 0.6),
+			NumberSequenceKeypoint.new(0.5, 0.4),
+			NumberSequenceKeypoint.new(1, 1)
+		})
+		foam.Size = NumberSequence.new({
+			NumberSequenceKeypoint.new(0, 0.5),
+			NumberSequenceKeypoint.new(0.5, 1),
+			NumberSequenceKeypoint.new(1, 0.2)
+		})
+		foam.Color = ColorSequence.new(Color3.fromRGB(200, 220, 255))
 		foam.Enabled = true
 		foam.Parent = foamAttach
 	end
 	
-	-- Animate waves realistically
+	-- Animate waves with realistic patterns
 	local function animateWaves()
 		if RealisticOcean then
 			RealisticOcean:Clean(runService.RenderStepped:Connect(function()
@@ -42208,29 +42233,31 @@ run(function()
 				
 				local time = tick()
 				
-				-- Animate water surface with wave
-				local waveOffset = math.sin(time * waveSpeed) * waveAmplitude + 
-									math.cos(time * waveSpeed * 0.7) * (waveAmplitude * 0.6)
-				waterSurface.CFrame = CFrame.new(0, -1500 + waveOffset, 0)
+				-- Main ocean wave motion
+				local mainWave = math.sin(time * waveSpeed) * waveAmplitude + 
+								math.cos(time * waveSpeed * 0.7) * (waveAmplitude * 0.7) +
+								math.sin(time * waveSpeed * 0.5) * (waveAmplitude * 0.5)
+				waterSurface.CFrame = CFrame.new(0, -oceanDepth + mainWave, 0)
 				
-				-- Animate wave particles for realistic effect
+				-- Animate individual wave mesh pieces
 				for _, waveData in ipairs(waveParticles) do
 					if waveData.part and waveData.part.Parent then
-						local waveHeightEffect = math.sin(time * waveSpeed + waveData.index * 0.3) * waveAmplitude * 2 +
-													math.cos(time * waveSpeed * 0.8 + waveData.index * 0.2) * (waveAmplitude * 1.5)
+						-- Complex wave pattern
+						local distFromCenter = math.sqrt(waveData.offsetX^2 + waveData.offsetZ^2)
 						
-						-- Create circular wave pattern
-						local distance = math.sqrt(waveData.offsetX^2 + waveData.offsetZ^2)
-						local radiationWave = math.sin((time * waveSpeed * 0.5) - (distance * 0.01)) * waveAmplitude
+						-- Multiple overlapping wave patterns for realism
+						local wave1 = math.sin(time * waveSpeed + waveData.offsetX * 0.1) * waveAmplitude * 1.5
+						local wave2 = math.cos(time * waveSpeed * 0.8 + waveData.offsetZ * 0.08) * waveAmplitude * 1.2
+						local wave3 = math.sin((time * waveSpeed * 0.5) - (distFromCenter * 0.02)) * waveAmplitude * 0.8
 						
-						waveData.part.CFrame = CFrame.new(
-							waveData.offsetX, 
-							-1475 + waveHeightEffect + radiationWave, 
-							waveData.offsetZ
-						)
+						local totalWave = wave1 + wave2 + wave3
 						
-						-- Subtle transparency change for wave effect
-						waveData.part.Transparency = 0.7 + math.sin(time * waveSpeed * 0.5 + waveData.index) * 0.1
+						-- Apply wave motion
+						waveData.part.CFrame = CFrame.new(waveData.baseX, -oceanDepth + 30 + totalWave, waveData.baseZ)
+						
+						-- Subtle color variation for wave peaks
+						local brightness = 0.3 + math.sin(time + distFromCenter * 0.1) * 0.15
+						waveData.part.Transparency = brightness
 					end
 				end
 			end))
@@ -42245,7 +42272,7 @@ run(function()
 			if callback then
 				-- Create ocean if it doesn't exist
 				if not oceanContainer or not oceanContainer.Parent then
-					createOceanInVoid()
+					createRealisticOcean()
 				end
 				
 				-- Make it visible
@@ -42253,10 +42280,10 @@ run(function()
 					oceanContainer.Parent = workspace
 				end
 				
-				-- Adjust lighting for ocean atmosphere
+				-- Set realistic ocean lighting
 				local lighting = game:GetService('Lighting')
-				lighting.Ambient = Color3.fromRGB(100, 150, 200)
-				lighting.OutdoorAmbient = Color3.fromRGB(100, 150, 200)
+				lighting.Ambient = Color3.fromRGB(120, 160, 200)
+				lighting.OutdoorAmbient = Color3.fromRGB(120, 160, 200)
 				
 				-- Start wave animation
 				animateWaves()
@@ -42267,14 +42294,14 @@ run(function()
 				end
 			end
 		end,
-		Tooltip = 'Creates a realistic ocean in the void beneath the map'
+		Tooltip = 'Realistic ocean with waves and foam in the void'
 	})
 	
 	RealisticOcean:CreateSlider({
 		Name = 'Wave Height',
 		Min = 0.1,
 		Max = 3,
-		Default = 0.5,
+		Default = 1,
 		Decimal = 10,
 		Function = function(val)
 			waveAmplitude = val
@@ -42285,7 +42312,7 @@ run(function()
 		Name = 'Wave Speed',
 		Min = 0.5,
 		Max = 5,
-		Default = 1.5,
+		Default = 2,
 		Decimal = 10,
 		Function = function(val)
 			waveSpeed = val
@@ -42299,15 +42326,27 @@ run(function()
 		Default = 1500,
 		Decimal = 100,
 		Function = function(val)
+			oceanDepth = val
 			if waterSurface then
-				waterSurface.CFrame = CFrame.new(0, -val, 0)
-				-- Reposition wave particles
+				waterSurface.CFrame = CFrame.new(0, -oceanDepth, 0)
+				-- Update all wave meshes
+				local index = 1
 				for _, waveData in ipairs(waveParticles) do
 					if waveData.part then
-						waveData.part.CFrame = CFrame.new(waveData.offsetX, -val + 25, waveData.offsetZ)
+						waveData.part.CFrame = CFrame.new(waveData.baseX, -oceanDepth + 30, waveData.baseZ)
 					end
 				end
 			end
 		end
+	})
+	
+	RealisticOcean:CreateToggle({
+		Name = 'Enhanced Transparency',
+		Function = function(callback)
+			if waterSurface then
+				waterSurface.Transparency = callback and 0.1 or 0.2
+			end
+		end,
+		Default = true
 	})
 end)
