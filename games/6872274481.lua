@@ -7758,7 +7758,7 @@ run(function()
 		return bestPart or character:FindFirstChild('HumanoidRootPart')
 	end
 
-	ProjectileAimbot = vape.Categories.Blatent:CreateModule({
+	ProjectileAimbot = vape.Categories.Utility:CreateModule({
 		Name = 'ProjectileAimbot',
 		Function = function(callback)
 			if callback then
