@@ -2675,7 +2675,7 @@ run(function()
 		end
 	end
 	
-	ProjectileAimAssist = vape.Categories.Blatent:CreateModule({
+	ProjectileAimAssist = vape.Categories.Utility:CreateModule({
 		Name = 'ProjectileAimAssist',
 		Function = function(callback)
 			if callback then
