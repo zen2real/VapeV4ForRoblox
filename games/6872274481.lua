@@ -42269,3 +42269,292 @@ run(function()
 		Tooltip = 'Changes orange wool blocks to red wool (instant, no flicker)'
 	})
 end)
+run(function()
+	local KaidaKillaura
+	local Targets
+	local AttackRange
+	local UpdateRate
+	local MouseDown
+	local GUICheck
+	local ShowAnimation
+	local PerfectAbility
+	local AbilityDistance
+	local SwingDuringAbility
+	local lastAttackTime = 0
+	local lastAbilityTime = 0
+	local attackCooldown = 0.65
+	local abilityCooldown = 22
+	local isChargingAbility = false
+	local abilityStartTime = 0
+	
+	local function getPlayerClawLevel()
+		local handItem = lplr.Character and lplr.Character:FindFirstChild('HandInvItem')
+		if handItem and handItem.Value then
+			local itemType = handItem.Value.Name
+			if itemType == 'summoner_claw_1' then return 1 end
+			if itemType == 'summoner_claw_2' then return 2 end
+			if itemType == 'summoner_claw_3' then return 3 end
+			if itemType == 'summoner_claw_4' then return 4 end
+		end
+		
+		if store and store.inventory and store.inventory.hotbar then
+			for _, v in pairs(store.inventory.hotbar) do
+				if v.item then
+					local itemType = v.item.itemType
+					if itemType == 'summoner_claw_1' then return 1 end
+					if itemType == 'summoner_claw_2' then return 2 end
+					if itemType == 'summoner_claw_3' then return 3 end
+					if itemType == 'summoner_claw_4' then return 4 end
+				end
+			end
+		end
+		
+		return 1 
+	end
+	
+	KaidaKillaura = vape.Categories.Blatant:CreateModule({
+		Name = 'Kaida Killaura',
+		Function = function(callback)
+			
+			if callback then
+				if store.equippedKit ~= 'summoner' then
+					notif('Kaida Killaura', 'You need to be using Summoner kit!', 3, 'alert')
+					KaidaKillaura:Toggle()
+					return
+				end
+				
+				lastAttackTime = 0
+				lastAbilityTime = 0
+				isChargingAbility = false
+				
+				repeat
+					if not entitylib.isAlive then
+						task.wait(0.1)
+						continue
+					end
+					
+					if GUICheck.Enabled then
+						if bedwars.AppController:isLayerOpen(bedwars.UILayers.MAIN) then
+							task.wait(0.1)
+							continue
+						end
+					end
+					
+					local handItem = lplr.Character:FindFirstChild('HandInvItem')
+					local hasClaw = false
+					if handItem and handItem.Value then
+						local itemType = handItem.Value.Name
+						hasClaw = itemType:find('summoner_claw')
+					end
+					
+					if not hasClaw then
+						task.wait(0.1)
+						continue
+					end
+					
+					if MouseDown.Enabled then
+						local mousePressed = inputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton1)
+						if not mousePressed then
+							task.wait(1.2)
+							continue
+						end
+					end
+					
+					local plr = entitylib.EntityPosition({
+						Range = AttackRange.Value,
+						Part = 'RootPart',
+						Players = Targets.Players.Enabled,
+						NPCs = Targets.NPCs.Enabled,
+						Wallcheck = Targets.Walls.Enabled or nil
+					})
+					
+					if plr then
+						local localPosition = entitylib.character.RootPart.Position
+						local targetDistance = (localPosition - plr.RootPart.Position).Magnitude
+						local currentTime = workspace:GetServerTimeNow()
+						
+						if PerfectAbility.Enabled and targetDistance <= AbilityDistance.Value then
+							if (currentTime - lastAbilityTime) >= abilityCooldown then
+								if not isChargingAbility then
+									pcall(function()
+										game:GetService("ReplicatedStorage")
+											:WaitForChild("events-@easy-games/game-core:shared/game-core-networking@getEvents.Events")
+											:WaitForChild("useAbility"):FireServer("summoner_start_charging")
+									end)
+									isChargingAbility = true
+									abilityStartTime = currentTime
+								end
+								
+								local chargeTime = currentTime - abilityStartTime
+								if chargeTime >= 0.5 then
+									pcall(function()
+										game:GetService("ReplicatedStorage")
+											:WaitForChild("events-@easy-games/game-core:shared/game-core-networking@getEvents.Events")
+											:WaitForChild("useAbility"):FireServer("summoner_finish_charging")
+									end)
+									isChargingAbility = false
+									lastAbilityTime = currentTime
+								end
+							end
+						else
+							if isChargingAbility then
+								isChargingAbility = false
+							end
+						end
+						if (currentTime - lastAttackTime) >= attackCooldown then
+							if isChargingAbility and not SwingDuringAbility.Enabled then
+								task.wait(0.05)
+								continue
+							end
+							
+							local shootDir = CFrame.lookAt(localPosition, plr.RootPart.Position).LookVector
+							localPosition += shootDir * math.max((localPosition - plr.RootPart.Position).Magnitude - 16, 0)
+							lastAttackTime = currentTime
+							if ShowAnimation.Enabled then
+								task.spawn(function()
+									pcall(function()
+										local clawLevel = getPlayerClawLevel()
+										bedwars.AnimationUtil:playAnimation(lplr, bedwars.GameAnimationUtil:getAssetId(bedwars.AnimationType.SUMMONER_CHARACTER_SWIPE), {
+											looped = false
+										})
+										local clawModel = replicatedStorage.Assets.Misc.Kaida.Summoner_DragonClaw:Clone()
+										local clawColors = {
+											Color3.fromRGB(75, 75, 75), 
+											Color3.fromRGB(255, 255, 255), 
+											Color3.fromRGB(43, 229, 229),  
+											Color3.fromRGB(49, 229, 94)   
+										}
+										local nailMesh = clawModel:FindFirstChild("dragon_claw_nail_mesh")
+										if nailMesh and nailMesh:IsA("MeshPart") then
+											nailMesh.Color = clawColors[clawLevel] or clawColors[1]
+										end
+										if bedwars.KnightClient and bedwars.KnightClient.Controllers.SummonerKitSkinController then
+											if bedwars.KnightClient.Controllers.SummonerKitSkinController:isPrismaticSkin(lplr) then
+												bedwars.KnightClient.Controllers.SummonerKitSkinController:applyClawRGB(clawModel)
+											end
+										end
+										clawModel.Parent = workspace
+										local camera = workspace.CurrentCamera
+										if camera and camera.CFrame.Position and (camera.CFrame.Position - entitylib.character.RootPart.Position).Magnitude < 1 then
+											for _, part in clawModel:GetDescendants() do
+												if part:IsA('MeshPart') then
+													part.Transparency = 0.6
+												end
+											end
+										end
+										local rootPart = entitylib.character.RootPart
+										local Unit = Vector3.new(shootDir.X, 0, shootDir.Z).Unit
+										local startPos = rootPart.Position + Unit:Cross(Vector3.new(0, 1, 0)).Unit * -1 * 5 + Unit * 6
+										local direction = (startPos + shootDir * 13 - startPos).Unit
+										local cframe = CFrame.new(startPos, startPos + direction)
+										clawModel:PivotTo(cframe)
+										clawModel.PrimaryPart.Anchored = true
+										if clawModel:FindFirstChild('AnimationController') then
+											local animator = clawModel.AnimationController:FindFirstChildOfClass('Animator')
+											if animator then
+												bedwars.AnimationUtil:playAnimation(animator, bedwars.GameAnimationUtil:getAssetId(bedwars.AnimationType.SUMMONER_CLAW_ATTACK), {
+													looped = false,
+													speed = 1
+												})
+											end
+										end
+										pcall(function()
+											local sounds = {
+												bedwars.SoundList.SUMMONER_CLAW_ATTACK_1,
+												bedwars.SoundList.SUMMONER_CLAW_ATTACK_2,
+												bedwars.SoundList.SUMMONER_CLAW_ATTACK_3,
+												bedwars.SoundList.SUMMONER_CLAW_ATTACK_4
+											}
+											bedwars.SoundManager:playSound(sounds[math.random(1, #sounds)], {
+												position = rootPart.Position
+											})
+										end)
+										task.wait(0.75)
+										clawModel:Destroy()
+									end)
+								end)
+							end
+							bedwars.Client:Get(remotes.SummonerClawAttack):SendToServer({
+								position = localPosition,
+								direction = shootDir,
+								clientTime = currentTime
+							})
+						end
+					else
+						if isChargingAbility then
+							isChargingAbility = false
+						end
+					end
+					
+					task.wait(1 / UpdateRate.Value)
+				until not KaidaKillaura.Enabled
+			end
+		end,
+		Tooltip = 'Auto attacks with Summoner claw'
+	})
+	
+	Targets = KaidaKillaura:CreateTargets({
+		Players = true,
+		NPCs = true,
+		Walls = true
+	})
+	
+	AttackRange = KaidaKillaura:CreateSlider({
+		Name = 'Attack Range',
+		Min = 1,
+		Max = 32,
+		Default = 22,
+		Suffix = function(val)
+			return val == 1 and 'stud' or 'studs'
+		end
+	})
+	
+	UpdateRate = KaidaKillaura:CreateSlider({
+		Name = 'Update Rate',
+		Min = 1,
+		Max = 120,
+		Default = 60,
+		Suffix = 'hz'
+	})
+	
+	MouseDown = KaidaKillaura:CreateToggle({
+		Name = 'Require Mouse Down',
+		Tooltip = 'Only attacks while holding left click'
+	})
+	
+	GUICheck = KaidaKillaura:CreateToggle({
+		Name = 'GUI Check'
+	})
+	
+	ShowAnimation = KaidaKillaura:CreateToggle({
+		Name = 'Show Animation',
+		Default = true
+	})
+	
+	SwingDuringAbility = KaidaKillaura:CreateToggle({
+		Name = 'Swing During Ability',
+		Default = true,
+		Tooltip = 'Continue claw attacks while charging ability (disable for legit gameplay)'
+	})
+	
+	PerfectAbility = KaidaKillaura:CreateToggle({
+		Name = 'Perfect Ability',
+		Default = false,
+		Tooltip = 'Uses ability with minimum 0.5s charge when enemy is close',
+		Function = function(callback)
+			AbilityDistance.Object.Visible = callback
+		end
+	})
+	
+	AbilityDistance = KaidaKillaura:CreateSlider({
+		Name = 'Ability Distance',
+		Min = 3,
+		Max = 15,
+		Default = 6,
+		Visible = false,
+		Tooltip = 'Distance to trigger ability (in studs, 3 studs = 1 block)',
+		Suffix = function(val)
+			return val == 1 and 'stud' or 'studs'
+		end
+	})
+end)
