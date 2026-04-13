@@ -41828,113 +41828,6 @@ run(function()
 	})
 end)
 
--- ============ Enhanced Ocean System ============
-run(function()
-	local EnhancedOcean
-	local terrain = workspace:FindFirstChild('Terrain')
-	local originalWaterColor = nil
-	local waterParticles = {}
-	
-	EnhancedOcean = vape.Categories.World:CreateModule({
-		Name = 'Enhanced Ocean',
-		Function = function(callback)
-			if callback then
-				-- Get terrain
-				local terrain = workspace:FindFirstChildWhichIsA('Terrain')
-				if not terrain then return end
-				
-				-- Store original
-				originalWaterColor = terrain.WaterColor
-				
-				-- Make water look more realistic with deeper blue
-				terrain.WaterColor = Color3.fromRGB(18, 95, 145)
-				
-				-- Also find and enhance any water parts
-				local function enhanceWaterParts(obj)
-					if obj:IsA('Part') or obj:IsA('MeshPart') or obj:IsA('UnionOperation') then
-						if obj.Material == Enum.Material.Water then
-							obj.Color = Color3.fromRGB(18, 95, 145)
-							obj.Transparency = 0.18
-							if obj:IsA('Part') then
-								obj.TopSurface = Enum.SurfaceType.Smooth
-								obj.BottomSurface = Enum.SurfaceType.Smooth
-							end
-						end
-					end
-					for _, child in ipairs(obj:GetChildren()) do
-						enhanceWaterParts(child)
-					end
-				end
-				enhanceWaterParts(workspace)
-				
-				-- Add subtle wave animation effect
-				EnhancedOcean:Clean(runService.RenderStepped:Connect(function()
-					local time = tick()
-					
-					-- Slightly vary the water color to simulate wave movement
-					local variation = math.sin(time * 0.5) * 5
-					local r = math.max(13, math.min(23, 18 + variation))
-					local g = math.max(90, math.min(100, 95 + variation))
-					local b = math.max(140, math.min(150, 145 + variation))
-					
-					if terrain then
-						terrain.WaterColor = Color3.fromRGB(r, g, b)
-					end
-				end))
-			else
-				-- Restore
-				local terrain = workspace:FindFirstChildWhichIsA('Terrain')
-				if terrain and originalWaterColor then
-					terrain.WaterColor = originalWaterColor
-				end
-			end
-		end,
-		Tooltip = 'Realistic ocean with subtle wave effects'
-	})
-	
-	EnhancedOcean:CreateSlider({
-		Name = 'Water Brightness',
-		Min = 0.1,
-		Max = 2,
-		Default = 1,
-		Decimal = 10,
-		Function = function(val)
-			local terrain = workspace:FindFirstChildWhichIsA('Terrain')
-			if terrain then
-				local r, g, b = 18 * val, 95 * val, 145 * val
-				terrain.WaterColor = Color3.fromRGB(math.min(r, 255), math.min(g, 255), math.min(b, 255))
-			end
-		end
-	})
-	
-	EnhancedOcean:CreateToggle({
-		Name = 'Deep Ocean Blue',
-		Function = function(callback)
-			local terrain = workspace:FindFirstChildWhichIsA('Terrain')
-			if terrain then
-				if callback then
-					terrain.WaterColor = Color3.fromRGB(10, 70, 120)
-				else
-					terrain.WaterColor = Color3.fromRGB(18, 95, 145)
-				end
-			end
-		end
-	})
-	
-	EnhancedOcean:CreateToggle({
-		Name = 'Shallow Water Color',
-		Function = function(callback)
-			local terrain = workspace:FindFirstChildWhichIsA('Terrain')
-			if terrain then
-				if callback then
-					terrain.WaterColor = Color3.fromRGB(30, 140, 180)
-				else
-					terrain.WaterColor = Color3.fromRGB(18, 95, 145)
-				end
-			end
-		end
-	})
-end)
 local OpenConsole = vape.Categories.Utility:CreateModule({
     Name = 'Open Console',
     Tooltip = 'Open console or chat for players without chat.',
@@ -42178,5 +42071,201 @@ run(function()
 			end
 		end,
 		Tooltip = 'Mine/build through players and NPCs'
+	})
+end)
+run(function()
+	local WoolColorChanger
+	local OldMaterials = {}
+	local OldColors = {}
+	local oldTexture = {}
+	local oldColor = {}
+	
+	local function getWorldFolder()
+		local Map = workspace:WaitForChild("Map", math.huge)
+		local Worlds = Map:WaitForChild("Worlds", math.huge)
+		if not Worlds then return nil end
+		return Worlds:GetChildren()[1] 
+	end
+	
+	local worldFolder = getWorldFolder()
+	if not worldFolder then return end
+	local blocks = worldFolder:WaitForChild("Blocks")
+	
+	local function isValidWoolBlock(obj)
+		if not obj:IsA("BasePart") then
+			return false
+		end
+		
+		if obj.Name ~= "wool_orange" then
+			return false
+		end
+		
+		local parent = obj.Parent
+		if parent then
+			if parent.Name == "Viewmodel" or parent.Parent and parent.Parent.Name == "Viewmodel" then
+				return false
+			end
+			
+			if parent:IsA("Accessory") or parent:IsA("Tool") then
+				return false
+			end
+			
+			local ancestor = parent
+			while ancestor do
+				if ancestor:IsA("Model") and playersService:GetPlayerFromCharacter(ancestor) then
+					return false
+				end
+				ancestor = ancestor.Parent
+			end
+		end
+		
+		return true
+	end
+	
+	WoolColorChanger = vape.Categories.Render:CreateModule({
+		Name = 'REDvsBLUE (wool)',
+		Function = function(callback)
+			if callback then
+				local NewMaterial = Instance.new('MaterialVariant')
+				NewMaterial.Parent = cloneref(game:GetService('MaterialService'))
+				NewMaterial.Name = 'rbxassetid://16991768606'
+				NewMaterial.ColorMap = 'rbxassetid://16991768606'
+				NewMaterial.StudsPerTile = 3
+				NewMaterial.RoughnessMap = 'rbxassetid://16991768606'
+				NewMaterial.BaseMaterial = 'Fabric'
+				
+				WoolColorChanger:Clean(gameCamera:FindFirstChild("Viewmodel").ChildAdded:Connect(function(obj)
+					if obj.Name == "wool_orange" then
+						task.wait(0.01)
+						if obj:FindFirstChild('Handle') then
+							for i, texture in obj:FindFirstChild('Handle'):GetChildren() do
+								if texture:IsA('Texture') then
+									oldTexture[texture] = texture.Texture
+									oldColor[texture] = texture.Color3
+									texture.Texture = "rbxassetid://16991768606"
+									texture.Color3 = Color3.fromRGB(196, 40, 28)
+								end
+							end
+						end
+					end
+				end))
+				
+				WoolColorChanger:Clean(lplr.Character.ChildAdded:Connect(function(obj)
+					if obj.Name == "wool_orange" then
+						task.wait(0.01)
+						if obj:FindFirstChild('Handle') then
+							for i, texture in obj:FindFirstChild('Handle'):GetChildren() do
+								if texture:IsA('Texture') then
+									oldTexture[texture] = texture.Texture
+									oldColor[texture] = texture.Color3
+									texture.Texture = "rbxassetid://16991768606"
+									texture.Color3 = Color3.fromRGB(196, 40, 28)
+								end
+							end
+						end
+					end
+				end))
+				
+				WoolColorChanger:Clean(blocks.ChildAdded:Connect(function(obj)
+					if obj.Name == "wool_orange" and isValidWoolBlock(obj) then
+						OldMaterials[obj] = obj.MaterialVariant
+						OldColors[obj] = obj.Color
+						obj.MaterialVariant = 'rbxassetid://16991768606'
+						obj.Color = Color3.fromRGB(196, 40, 28)
+					end
+				end))
+				
+				WoolColorChanger:Clean(workspace.ChildAdded:Connect(function(obj)
+					if obj.Name == "wool_orange" and isValidWoolBlock(obj) then
+						OldMaterials[obj] = obj.MaterialVariant
+						OldColors[obj] = obj.Color
+						obj.MaterialVariant = 'rbxassetid://16991768606'
+						obj.Color = Color3.fromRGB(196, 40, 28)
+					end
+				end))
+				
+				for _, obj in blocks:GetChildren() do
+					if obj.Name == "wool_orange" and isValidWoolBlock(obj) then
+						OldMaterials[obj] = obj.MaterialVariant
+						OldColors[obj] = obj.Color
+						obj.MaterialVariant = 'rbxassetid://16991768606'
+						obj.Color = Color3.fromRGB(196, 40, 28)
+					end
+				end
+				
+				task.spawn(function()
+					while WoolColorChanger.Enabled do
+						for i, v in lplr.PlayerGui:FindFirstChild('TopBarAppGui'):GetDescendants() do
+							if v:IsA("Frame") and v.Name == "3" and v.BackgroundColor3 == Color3.fromRGB(242, 142, 41) then
+								v.BackgroundColor3 = Color3.fromRGB(196, 40, 28)
+								for _, child in v:GetDescendants() do
+									if child:IsA("UIStroke") then
+										child.Color = Color3.fromRGB(196, 40, 28)
+									end
+								end
+							end
+						end
+						task.wait(0.015)
+					end
+				end)
+				
+				WoolColorChanger:Clean(lplr.PlayerGui.ChildAdded:Connect(function(obj)
+					if obj.Name == "TabListScreenGui" then
+						for i, v in obj:GetDescendants() do
+							if v:IsA("Frame") and v.Name == "2" and v.BackgroundColor3 == Color3.fromRGB(242, 142, 41) then
+								v.BackgroundColor3 = Color3.fromRGB(196, 40, 28)
+								for _, child in v:GetDescendants() do
+									if child:IsA("UIStroke") then
+										child.Color = Color3.fromRGB(196, 40, 28)
+									end
+								end
+								if v:FindFirstChild("TeamName") then
+									v:FindFirstChild("TeamName").RichText = true
+									v:FindFirstChild("TeamName").Text = "<b>Red Team</b>"
+								end
+							end
+						end
+					end
+				end))
+				
+			else
+				for i, v in lplr.PlayerGui:FindFirstChild('TopBarAppGui'):GetDescendants() do
+					if v:IsA("Frame") and v.Name == "3" and v.BackgroundColor3 == Color3.fromRGB(196, 40, 28) then
+						v.BackgroundColor3 = Color3.fromRGB(242, 142, 41)
+						for _, child in v:GetDescendants() do
+							if child:IsA("UIStroke") then
+								child.Color = Color3.fromRGB(242, 142, 41)
+							end
+						end
+					end
+				end
+				
+				for texture, oldTex in pairs(oldTexture) do
+					if texture and texture.Parent then
+						texture.Texture = oldTex
+					end
+				end
+				for texture, oldCol in pairs(oldColor) do
+					if texture and texture.Parent then
+						texture.Color3 = oldCol
+					end
+				end
+				
+				for obj, oldMaterial in pairs(OldMaterials) do
+					if obj and obj.Parent then
+						obj.MaterialVariant = oldMaterial
+						if OldColors[obj] then
+							obj.Color = OldColors[obj]
+						end
+					end
+				end
+				
+				table.clear(OldMaterials)
+				table.clear(OldColors)
+				table.clear(oldTexture)
+				table.clear(oldColor)
+			end
+		end,
+		Tooltip = 'Changes orange wool blocks to red wool (instant, no flicker)'
 	})
 end)
