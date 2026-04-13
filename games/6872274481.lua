@@ -42558,3 +42558,290 @@ run(function()
 		end
 	})
 end)
+run(function()
+    local Clutch
+    local runService = game:GetService("RunService")
+    local workspace = game:GetService("Workspace")
+    local HoldBase = 0.15
+    local FallVelocity = -6
+    local lastPlace = 0
+    local UseBlacklisted_Blocks
+    local blacklisted
+    local clutchCount = 0
+    local lastResetTime = 0
+    
+    local cachedProximityBlock = nil
+    local cachedProximityTime = 0
+    local PROXIMITY_CACHE_TIME = 0.1
+    
+    local blacklistLookup = {}
+    
+    local function callPlace(blockpos, wool, rotate)
+        local placeFn
+        if type(vape) == "table" and type(vape.clean) == "function" then
+            vape:clean(blockpos, wool, rotate)
+            return
+        end
+        if type(vape) == "table" and type(vape.place) == "function" then
+            placeFn = vape.place
+        elseif type(place) == "function" then
+            placeFn = place
+        else
+            placeFn = bedwars.placeBlock
+        end
+        task.spawn(placeFn, blockpos, wool, rotate)
+    end
+
+    local function nearCorner(poscheck, pos)
+        local startpos = poscheck - Vector3.new(3, 3, 3)
+        local endpos = poscheck + Vector3.new(3, 3, 3)
+        local check = poscheck + (pos - poscheck).Unit * 100
+        return Vector3.new(
+            math.clamp(check.X, startpos.X, endpos.X), 
+            math.clamp(check.Y, startpos.Y, endpos.Y), 
+            math.clamp(check.Z, startpos.Z, endpos.Z)
+        )
+    end
+
+    local function blockProximity(pos)
+        local now = tick()
+        
+        if cachedProximityBlock and (now - cachedProximityTime) < PROXIMITY_CACHE_TIME then
+            return cachedProximityBlock
+        end
+        
+        local mag, returned = 60
+        local blockPos = bedwars.BlockController:getBlockPosition(pos)
+        
+        local tab = getBlocksInPoints(
+            bedwars.BlockController:getBlockPosition(pos - Vector3.new(15, 15, 15)), 
+            bedwars.BlockController:getBlockPosition(pos + Vector3.new(15, 15, 15))
+        )
+        
+        for _, v in tab do
+            local blockpos = nearCorner(v, pos)
+            local newmag = (pos - blockpos).Magnitude
+            if newmag < mag then
+                mag, returned = newmag, blockpos
+            end
+        end
+        table.clear(tab)
+        
+        cachedProximityBlock = returned
+        cachedProximityTime = now
+        
+        return returned
+    end
+
+    local function getClutchBlock()
+        if store.hand.toolType == 'block' then
+            return store.hand.tool.Name, store.hand.amount
+        end
+        return nil, 0
+    end
+
+    local function updateBlacklistLookup()
+        table.clear(blacklistLookup)
+        if blacklisted and blacklisted.ListEnabled then
+            for _, v in blacklisted.ListEnabled do
+                blacklistLookup[v] = true
+            end
+        end
+    end
+
+    Clutch = vape.Categories.Utility:CreateModule({
+        Name = 'Clutch',
+        Function = function(call)
+            if call then
+                clutchCount = 0
+                lastResetTime = os.clock()
+                updateBlacklistLookup()
+                
+                local heightCheckEnabled = false
+                local minHeight = 20
+                local minBlocksEnabled = false
+                local minRequired = 5
+                local limitToItemsEnabled = false
+                local requireMouseEnabled = false
+                local silentAimEnabled = false
+                local speedVal = 6
+                
+                Clutch:Clean(runService.Heartbeat:Connect(function()
+                    if not Clutch.Enabled or not entitylib.isAlive then return end
+                    
+                    local root = entitylib.character.RootPart
+                    if not root or inputService:GetFocusedTextBox() then return end
+
+                    if clutchCount % 10 == 0 then
+                        heightCheckEnabled = Clutch.HeightCheck and Clutch.HeightCheck.Enabled or false
+                        minHeight = (Clutch.MinHeight and Clutch.MinHeight.Value) or 20
+                        minBlocksEnabled = Clutch.MinBlocks and Clutch.MinBlocks.Enabled or false
+                        minRequired = (Clutch.MinBlockAmount and Clutch.MinBlockAmount.Value) or 5
+                        limitToItemsEnabled = Clutch.LimitToItems and Clutch.LimitToItems.Enabled or false
+                        requireMouseEnabled = Clutch.RequireMouse and Clutch.RequireMouse.Enabled or false
+                        silentAimEnabled = Clutch.SilentAim and Clutch.SilentAim.Enabled or false
+                        speedVal = (Clutch.Speed and Clutch.Speed.Value) or 6
+                    end
+
+                    if heightCheckEnabled and root.Position.Y < minHeight then return end
+                    if limitToItemsEnabled and store.hand.toolType ~= "block" then return end
+                    if requireMouseEnabled and not inputService:IsMouseButtonPressed(0) then return end
+
+                    local wool, amount = getClutchBlock()
+                    if not wool then return end
+
+                    if not UseBlacklisted_Blocks.Enabled and blacklistLookup[wool] then
+                        return
+                    end
+
+                    if minBlocksEnabled and amount < minRequired then
+                        if Clutch.NotifyLowBlocks and Clutch.NotifyLowBlocks.Enabled then
+                            notif('Clutch', 'Low on blocks! ('..amount..' left)', 2)
+                        end
+                        return
+                    end
+                    
+                    local vy = root.Velocity.Y
+                    local now = os.clock()
+                    
+                    if (now - lastResetTime) > 5 then
+                        clutchCount = 0
+                        lastResetTime = now
+                    end
+                    
+                    local cooldown = math.clamp(HoldBase - (speedVal * 0.015), 0.01, HoldBase)
+                    
+                    if vy < FallVelocity and (now - lastPlace) > cooldown then
+                        local target = roundPos(root.Position - Vector3.new(0, entitylib.character.HipHeight + 4.5, 0))
+                        local exists, blockpos = getPlacedBlock(target)
+                        
+                        if not exists then
+                            local prox = blockProximity(target)
+                            local placePos = prox or (target * 3)
+                            
+                            callPlace(placePos, wool, false)
+                            lastPlace = now
+                            clutchCount = clutchCount + 1
+                            
+                            if silentAimEnabled then
+                                local camera = workspace.CurrentCamera
+                                if camera then
+                                    local camCFrame = camera.CFrame
+                                    local camType = camera.CameraType
+                                    local camSubject = camera.CameraSubject
+                                    local lv = root.CFrame.LookVector
+                                    local newLook = -Vector3.new(lv.X, 0, lv.Z).Unit
+                                    local rootPos = root.Position
+                                    root.CFrame = CFrame.new(rootPos, rootPos + newLook)
+                                    camera.CameraType = camType
+                                    camera.CameraSubject = camSubject
+                                    camera.CFrame = camCFrame
+                                end
+                            end
+                        end
+                    end
+                end))
+            else
+                cachedProximityBlock = nil
+                cachedProximityTime = 0
+            end
+        end,
+        Tooltip = 'Automatically places a block when falling to clutch'
+    })
+
+    UseBlacklisted_Blocks = Clutch:CreateToggle({
+        Name = "Use Blacklisted Blocks",
+        Default = false,
+        Tooltip = "Allows clutching with blacklisted blocks"
+    })
+
+    blacklisted = Clutch:CreateTextList({
+        Name = "Blacklisted Blocks",
+        Placeholder = "tnt",
+        Function = updateBlacklistLookup
+    })
+    
+    Clutch.LimitToItems = Clutch:CreateToggle({
+        Name = 'Limit to items',
+        Default = false,
+        Tooltip = "Only clutch when holding blocks"
+    })
+
+    Clutch.RequireMouse = Clutch:CreateToggle({
+        Name = 'Require mouse down',
+        Default = false,
+        Tooltip = "Only clutch when holding left click"
+    })
+
+    Clutch.SilentAim = Clutch:CreateToggle({
+        Name = 'Silent Aim',
+        Default = false,
+        Tooltip = "Looks down while placing without moving camera"
+    })
+
+    Clutch.HeightCheck = Clutch:CreateToggle({
+        Name = 'Height Check',
+        Default = false,
+        Tooltip = "Only clutch above minimum height (prevents void clutching)"
+    })
+
+    Clutch.MinBlocks = Clutch:CreateToggle({
+        Name = 'Min Block Check',
+        Default = false,
+        Tooltip = "Disables clutch when running low on blocks"
+    })
+
+    Clutch.NotifyClutch = Clutch:CreateToggle({
+        Name = 'Notify Clutch',
+        Default = false,
+        Tooltip = "Shows notification when you clutch"
+    })
+
+    Clutch.NotifyLowBlocks = Clutch:CreateToggle({
+        Name = 'Notify Low Blocks',
+        Default = false,
+        Tooltip = "Warns you when running out of blocks"
+    })
+
+    Clutch.AutoDisable = Clutch:CreateToggle({
+        Name = 'Auto Disable',
+        Default = false,
+        Tooltip = "Disables clutch when you run out of blocks"
+    })
+
+    Clutch.Speed = Clutch:CreateSlider({
+        Name = 'Speed',
+        Min = 0,
+        Max = 9,
+        Default = 6,
+        Tooltip = "How fast to place blocks"
+    })
+
+    Clutch.MinHeight = Clutch:CreateSlider({
+        Name = 'Min Height',
+        Min = 0,
+        Max = 50,
+        Default = 20,
+        Tooltip = "Minimum Y position to clutch (prevents void)"
+    })
+
+    Clutch.MinBlockAmount = Clutch:CreateSlider({
+        Name = 'Min Block Amount',
+        Min = 1,
+        Max = 32,
+        Default = 5,
+        Tooltip = "Minimum blocks required to clutch"
+    })
+
+    task.spawn(function()
+        while task.wait(1) do
+            if Clutch.Enabled and Clutch.AutoDisable and Clutch.AutoDisable.Enabled then
+                local wool, amount = getClutchBlock()
+                if amount == 0 then
+                    notif('Clutch', 'Out of blocks! Auto disabled.', 3)
+                    Clutch:Toggle()
+                end
+            end
+        end
+    end)
+end)
