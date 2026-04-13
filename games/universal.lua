@@ -271,6 +271,28 @@ vape.Libraries.auraanims = {
 		{CFrame = CFrame.new(0.7, -0.71, 0.59) * CFrame.Angles(math.rad(-84), math.rad(50), math.rad(-38)), Time = 0.05},
 		{CFrame = CFrame.new(0.63, -0.1, 1.37) * CFrame.Angles(math.rad(-84), math.rad(50), math.rad(-38)), Time = 0.15}
 	}
+	Side = {
+		{CFrame = CFrame.new(0.5, -0.2, 0.5) * CFrame.Angles(math.rad(-20), math.rad(40), math.rad(-70)), Time = 0.1},
+		{CFrame = CFrame.new(0.5, -0.2, 0.5) * CFrame.Angles(math.rad(-20), math.rad(40), math.rad(-70)), Time = 0.1}
+	},
+	Tilt = {
+		{CFrame = CFrame.new(0.2, -0.1, 0.2) * CFrame.Angles(math.rad(-15), math.rad(15), math.rad(-30)), Time = 0.15},
+		{CFrame = CFrame.new(0, 0, 0), Time = 0.15}
+	},
+	['Small Swing'] = {
+		{CFrame = CFrame.Angles(math.rad(-30), 0, 0), Time = 0.1},
+		{CFrame = CFrame.Angles(math.rad(10), 0, 0), Time = 0.1}
+	},
+	Slide = {
+		{CFrame = CFrame.new(0.8, -0.4, 0.3) * CFrame.Angles(math.rad(-45), math.rad(45), math.rad(-90)), Time = 0.15},
+		{CFrame = CFrame.new(0, 0, 0), Time = 0.15}
+	},
+	Spin = {
+		{CFrame = CFrame.Angles(0, 0, math.rad(-90)), Time = 0.1},
+		{CFrame = CFrame.Angles(0, 0, math.rad(-180)), Time = 0.1},
+		{CFrame = CFrame.Angles(0, 0, math.rad(-270)), Time = 0.1},
+		{CFrame = CFrame.Angles(0, 0, 0), Time = 0.1}
+	}
 }
 
 local SpeedMethods
