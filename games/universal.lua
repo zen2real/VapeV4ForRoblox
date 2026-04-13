@@ -270,28 +270,45 @@ vape.Libraries.auraanims = {
 		{CFrame = CFrame.new(0.7, -0.71, 0.59) * CFrame.Angles(math.rad(-84), math.rad(50), math.rad(-38)), Time = 0.1},
 		{CFrame = CFrame.new(0.7, -0.71, 0.59) * CFrame.Angles(math.rad(-84), math.rad(50), math.rad(-38)), Time = 0.05},
 		{CFrame = CFrame.new(0.63, -0.1, 1.37) * CFrame.Angles(math.rad(-84), math.rad(50), math.rad(-38)), Time = 0.15}
-	}
-	Side = {
-		{CFrame = CFrame.new(0.5, -0.2, 0.5) * CFrame.Angles(math.rad(-20), math.rad(40), math.rad(-70)), Time = 0.1},
-		{CFrame = CFrame.new(0.5, -0.2, 0.5) * CFrame.Angles(math.rad(-20), math.rad(40), math.rad(-70)), Time = 0.1}
 	},
-	Tilt = {
-		{CFrame = CFrame.new(0.2, -0.1, 0.2) * CFrame.Angles(math.rad(-15), math.rad(15), math.rad(-30)), Time = 0.15},
-		{CFrame = CFrame.new(0, 0, 0), Time = 0.15}
+	Stab = {
+		{CFrame = CFrame.new(0.3, -0.5, 0.8) * CFrame.Angles(math.rad(30), math.rad(20), math.rad(45)), Time = 0.08},
+		{CFrame = CFrame.new(0.5, -0.3, 1.5) * CFrame.Angles(math.rad(-20), math.rad(10), math.rad(30)), Time = 0.08}
 	},
-	['Small Swing'] = {
-		{CFrame = CFrame.Angles(math.rad(-30), 0, 0), Time = 0.1},
-		{CFrame = CFrame.Angles(math.rad(10), 0, 0), Time = 0.1}
+	Downswing = {
+		{CFrame = CFrame.new(0, 0.5, 0.8) * CFrame.Angles(math.rad(-80), math.rad(0), math.rad(0)), Time = 0.1},
+		{CFrame = CFrame.new(0, -0.4, 0.9) * CFrame.Angles(math.rad(60), math.rad(0), math.rad(0)), Time = 0.12}
 	},
-	Slide = {
-		{CFrame = CFrame.new(0.8, -0.4, 0.3) * CFrame.Angles(math.rad(-45), math.rad(45), math.rad(-90)), Time = 0.15},
-		{CFrame = CFrame.new(0, 0, 0), Time = 0.15}
+	Upswing = {
+		{CFrame = CFrame.new(0, -0.5, 0.8) * CFrame.Angles(math.rad(60), math.rad(0), math.rad(0)), Time = 0.1},
+		{CFrame = CFrame.new(0, 0.4, 0.9) * CFrame.Angles(math.rad(-80), math.rad(0), math.rad(0)), Time = 0.12}
 	},
-	Spin = {
-		{CFrame = CFrame.Angles(0, 0, math.rad(-90)), Time = 0.1},
-		{CFrame = CFrame.Angles(0, 0, math.rad(-180)), Time = 0.1},
-		{CFrame = CFrame.Angles(0, 0, math.rad(-270)), Time = 0.1},
-		{CFrame = CFrame.Angles(0, 0, 0), Time = 0.1}
+	Thrust = {
+		{CFrame = CFrame.new(-0.4, -0.2, 0.5) * CFrame.Angles(math.rad(-45), math.rad(-30), math.rad(-60)), Time = 0.07},
+		{CFrame = CFrame.new(0.2, -0.1, 1.2) * CFrame.Angles(math.rad(20), math.rad(10), math.rad(30)), Time = 0.09}
+	},
+	Arc = {
+		{CFrame = CFrame.new(0.5, -0.3, 0.6) * CFrame.Angles(math.rad(-40), math.rad(60), math.rad(-70)), Time = 0.11},
+		{CFrame = CFrame.new(-0.5, -0.4, 0.8) * CFrame.Angles(math.rad(40), math.rad(-60), math.rad(70)), Time = 0.11}
+	},
+	Parry = {
+		{CFrame = CFrame.new(-0.3, -0.2, 0.5) * CFrame.Angles(math.rad(-30), math.rad(-80), math.rad(-45)), Time = 0.09},
+		{CFrame = CFrame.new(-0.2, -0.3, 0.5) * CFrame.Angles(math.rad(-20), math.rad(-80), math.rad(-45)), Time = 0.05}
+	},
+	['Double Spin'] = {
+		{CFrame = CFrame.Angles(math.rad(0), math.rad(0), math.rad(0)), Time = 0.08},
+		{CFrame = CFrame.Angles(math.rad(0), math.rad(180), math.rad(0)), Time = 0.08},
+		{CFrame = CFrame.Angles(math.rad(0), math.rad(360), math.rad(0)), Time = 0.08},
+		{CFrame = CFrame.Angles(math.rad(0), math.rad(540), math.rad(0)), Time = 0.08}
+	},
+	['Whirlwind'] = {
+		{CFrame = CFrame.Angles(math.rad(45), math.rad(45), math.rad(0)), Time = 0.1},
+		{CFrame = CFrame.Angles(math.rad(45), math.rad(225), math.rad(0)), Time = 0.1},
+		{CFrame = CFrame.Angles(math.rad(45), math.rad(405), math.rad(0)), Time = 0.1}
+	},
+	['Lazy'] = {
+		{CFrame = CFrame.new(-0.1, -0.3, 0.3) * CFrame.Angles(math.rad(-20), math.rad(30), math.rad(-40)), Time = 0.15},
+		{CFrame = CFrame.new(0, -0.4, 0.5) * CFrame.Angles(math.rad(10), math.rad(-20), math.rad(10)), Time = 0.15}
 	}
 }
 
@@ -2205,6 +2222,166 @@ run(function()
 		Suffix = function(val)
 			return val == 1 and 'stud' or 'studs'
 		end
+	})
+end)
+	
+run(function()
+	local Invisible
+	local clone, oldroot, hip, valid
+	local animtrack
+	local proper = true
+	
+	local function doClone()
+		if entitylib.isAlive and entitylib.character.Humanoid.Health > 0 then
+			hip = entitylib.character.Humanoid.HipHeight
+			oldroot = entitylib.character.HumanoidRootPart
+			if not lplr.Character.Parent then
+				return false
+			end
+	
+			lplr.Character.Parent = game
+			clone = oldroot:Clone()
+			clone.Parent = lplr.Character
+			oldroot.Parent = gameCamera
+			clone.CFrame = oldroot.CFrame
+	
+			lplr.Character.PrimaryPart = clone
+			entitylib.character.HumanoidRootPart = clone
+			entitylib.character.RootPart = clone
+			lplr.Character.Parent = workspace
+	
+			for _, v in lplr.Character:GetDescendants() do
+				if v:IsA('Weld') or v:IsA('Motor6D') then
+					if v.Part0 == oldroot then
+						v.Part0 = clone
+					end
+					if v.Part1 == oldroot then
+						v.Part1 = clone
+					end
+				end
+			end
+	
+			return true
+		end
+	
+		return false
+	end
+	
+	local function revertClone()
+		if not oldroot or not oldroot:IsDescendantOf(workspace) or not entitylib.isAlive then
+			return false
+		end
+	
+		lplr.Character.Parent = game
+		oldroot.Parent = lplr.Character
+		lplr.Character.PrimaryPart = oldroot
+		entitylib.character.HumanoidRootPart = oldroot
+		entitylib.character.RootPart = oldroot
+		lplr.Character.Parent = workspace
+		oldroot.CanCollide = true
+	
+		for _, v in lplr.Character:GetDescendants() do
+			if v:IsA('Weld') or v:IsA('Motor6D') then
+				if v.Part0 == clone then
+					v.Part0 = oldroot
+				end
+				if v.Part1 == clone then
+					v.Part1 = oldroot
+				end
+			end
+		end
+	
+		local oldpos = clone.CFrame
+		if clone then
+			clone:Destroy()
+			clone = nil
+		end
+	
+		oldroot.CFrame = oldpos
+		oldroot = nil
+		entitylib.character.Humanoid.HipHeight = hip or 2
+	end
+	
+	local function animationTrickery()
+		if entitylib.isAlive then
+			local anim = Instance.new('Animation')
+			anim.AnimationId = 'http://www.roblox.com/asset/?id=18537363391'
+			animtrack = entitylib.character.Humanoid.Animator:LoadAnimation(anim)
+			animtrack.Priority = Enum.AnimationPriority.Action4
+			animtrack:Play(0, 1, 0)
+			anim:Destroy()
+			animtrack.Stopped:Connect(function()
+				if Invisible.Enabled then
+					animationTrickery()
+				end
+			end)
+	
+			task.delay(0, function()
+				animtrack.TimePosition = 0.77
+				task.delay(1, function()
+					animtrack:AdjustSpeed(math.huge)
+				end)
+			end)
+		end
+	end
+	
+	Invisible = vape.Categories.Blatant:CreateModule({
+		Name = 'Invisible',
+		Function = function(callback)
+			if callback then
+				if not proper then
+					notif('Invisible', 'Broken state detected', 3, 'alert')
+					Invisible:Toggle()
+					return
+				end
+	
+				success = doClone()
+				if not success then
+					Invisible:Toggle()
+					return
+				end
+	
+				animationTrickery()
+				Invisible:Clean(runService.PreSimulation:Connect(function(dt)
+					if entitylib.isAlive and oldroot then
+						local root = entitylib.character.RootPart
+						local cf = root.CFrame - Vector3.new(0, entitylib.character.Humanoid.HipHeight + (root.Size.Y / 2) - 1, 0)
+	
+						if not isnetworkowner(oldroot) then
+							root.CFrame = oldroot.CFrame
+							root.Velocity = oldroot.Velocity
+							return
+						end
+	
+						oldroot.CFrame = cf * CFrame.Angles(math.rad(180), 0, 0)
+						oldroot.Velocity = root.Velocity
+						oldroot.CanCollide = false
+					end
+				end))
+	
+				Invisible:Clean(entitylib.Events.LocalAdded:Connect(function(char)
+					local animator = char.Humanoid:WaitForChild('Animator', 1)
+					if animator and Invisible.Enabled then
+						oldroot = nil
+						Invisible:Toggle()
+						Invisible:Toggle()
+					end
+				end))
+			else
+				if animtrack then
+					animtrack:Stop()
+					animtrack:Destroy()
+				end
+	
+				if success and clone and oldroot and proper then
+					proper = true
+					if oldroot and clone then
+						revertClone()
+					end
+				end
+			end
+		end,
+		Tooltip = 'Turns you invisible.'
 	})
 end)
 	
