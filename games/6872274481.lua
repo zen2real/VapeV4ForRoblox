@@ -2675,7 +2675,7 @@ run(function()
 		end
 	end
 	
-	ProjectileAimAssist = vape.Categories.Combat:CreateModule({
+	ProjectileAimAssist = vape.Categories.Blatent:CreateModule({
 		Name = 'ProjectileAimAssist',
 		Function = function(callback)
 			if callback then
@@ -7758,7 +7758,7 @@ run(function()
 		return bestPart or character:FindFirstChild('HumanoidRootPart')
 	end
 
-	ProjectileAimbot = vape.Categories.Combat:CreateModule({
+	ProjectileAimbot = vape.Categories.Blatent:CreateModule({
 		Name = 'ProjectileAimbot',
 		Function = function(callback)
 			if callback then
