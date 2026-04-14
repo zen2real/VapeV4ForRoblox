@@ -42932,3 +42932,255 @@ run(function()
 		Suffix = 'hz'
 	})
 end)
+run(function()
+	local AutoEmber
+	local Targets
+	local Range
+	local SpinCooldown
+	local Limit
+	local old = os.clock()+ 0.00000000000000000000013 -- the frame keeps this in sync i hope
+	local isCharging = false
+	local chargeAnim, FpChargeAnim = nil,nil
+	AutoEmber = vape.Categories.Kits:CreateModule({
+		Name = 'AutoEmber',
+		Tooltip = 'automatically uses the ember ability',
+		Function = function(call)
+			if call then
+				repeat
+					if entitylib.isAlive then 
+						local tool = getItem('infernal_saber') 
+						if tool and (not Limit.Enabled or store.hand.tool and store.hand.tool.Name == 'infernal_saber') then
+							local ent = entitylib.EntityPosition({
+								Range = HoldRange.Value,
+								Players = Targets.Players.Enabled,
+								NPCs = Targets.NPCs.Enabled,
+								Part = 'RootPart'
+							}) 
+
+							if not ent then
+								if isCharging then
+									isCharging = false
+									bedwars.HellSaberController.animationMaid:DoCleaning()
+									chargeAnim = nil
+									FpChargeAnim = nil
+									task.wait(0.3)
+									continue
+								end
+							end
+
+							if ent then
+								if not isCharging then
+									isCharging = true
+									bedwars.HellSaberController:playChargeSound(lplr)
+									local animer = lplr.Character
+									if animer ~= nil then
+										animer = animer:FindFirstChild("Humanoid")
+										if animer ~= nil then
+											animer = animer:FindFirstChild("Animator")
+										end
+									end
+									if not animer then
+										return nil
+									end
+									chargeAnim = animer:LoadAnimation(bedwars.GameAnimationUtil:getAnimation(bedwars.AnimationType.INFERNO_SWORD_CHARGE))
+									chargeAnim:Play()
+									chargeAnim:AdjustSpeed(1.83)
+									chargeAnim:GetMarkerReachedSignal("end"):Connect(function()
+										local newChargeAnim = chargeAnim
+										if newChargeAnim ~= nil then
+											newChargeAnim:AdjustSpeed(0)
+										end
+									end)
+									FpChargeAnim = bedwars.ViewmodelController:playAnimation(bedwars.AnimationType.FP_INFERNO_SWORD_CHARGE)
+									if FpChargeAnim then
+										FpChargeAnim:GetMarkerReachedSignal("end"):Connect(function()
+											local newFpChargeAnim = FpChargeAnim
+											if newFpChargeAnim ~= nil then
+												newFpChargeAnim:AdjustSpeed(0)
+											end
+										end)
+									end
+									bedwars.HellSaberController.animationMaid:GiveTask(function()
+										local MaidCA1 = chargeAnim
+										if MaidCA1 ~= nil then
+											MaidCA1:Stop()
+										end
+										local MaidCA2 = chargeAnim
+										if MaidCA2 ~= nil then
+											MaidCA2:Destroy()
+										end
+										local MaidFCA1 = FpChargeAnim
+										if MaidFCA1 ~= nil then
+											MaidFCA1:Stop()
+										end
+										local MaidFCA2 = FpChargeAnim
+										if MaidFCA2 ~= nil then
+											MaidFCA2:Destroy()
+										end
+									end)
+								end
+								local DeltaPos = (ent.RootPart.Position - lplr.Character.HumanoidRootPart.Position).Magnitude
+								if DeltaPos <= Range.Value then
+									local now = os.clock() + 0.00000000000000000000013 -- the frame per millsecond (ive tested lmao)
+									if (now - old) >= SpinCooldown.Value then
+										bedwars.HellSaberController.animationMaid:DoCleaning()
+										if not Limit.Enabled then
+											switchItem(tool)
+										end
+										bedwars.Client:Get('HellBladeRelease'):SendToServer({
+											chargeTime = 1 + tick() - 0.045,
+											weapon = tool,
+											player = lplr
+										})
+										old = os.clock() + 0.00000000000000000000013
+										bedwars.ViewmodelController:playAnimation(bedwars.AnimationType.FP_INFERNO_SWORD_SPIN)										
+										isCharging = false
+										
+									end
+								end
+							end
+						end
+					end
+					task.wait(0.1)
+				until not AutoEmber.Enabled 
+			end
+		end
+	})
+	Targets = AutoEmber:CreateTargets({
+		Players = true,
+		NPCs = false
+	})
+	SpinCooldown = AutoEmber:CreateSlider({
+		Name = 'Spin Cooldown',
+		Min = 0,
+		Max = 4,
+		Default = 1.12,
+		Decimal = 100,
+		Tooltip = '⚠️[Warning]: Values at or below 0.2 carry a high risk of instant auto-detection from a single clip. Use with caution.'
+	})
+	Range = AutoEmber:CreateSlider({
+		Name = 'Release Range',
+		Min = 1,
+		Max = 22,
+		Default = 22,
+		Suffix = function(val)
+			return val <= 1 and 'stud' or 'studs'
+		end
+	})
+	HoldRange = AutoEmber:CreateSlider({
+		Name = 'Hold Range',
+		Min = 1,
+		Max = 48,
+		Default = 32,
+		Suffix = function(val)
+			return val <= 1 and 'stud' or 'studs'
+		end
+	})
+	Limit = AutoEmber:CreateToggle({Name = 'Limit to item'})
+end)
+
+run(function()
+    local AutoBuilder
+    local BedCheck
+    local BlockBlacklist
+    local LimitMode
+    local FXEnabled
+
+    local function findNearestBed(position)
+        local closest, closestDist = nil, math.huge
+        local teamId = lplr:GetAttribute('Team') or -1
+        for _, bed in pairs(collectionService:GetTagged('bed')) do
+            local dist = (position - bed.Position).Magnitude
+            local isValid = bed:GetAttribute('Team'..teamId..'NoBreak')
+            if isValid and dist < closestDist then
+                closest = bed
+                closestDist = dist
+            end
+        end
+
+        return closest, closestDist
+    end
+
+    local function fortifyBlock(payload, playEffects)
+        if not payload then return end
+
+        if playEffects then
+            bedwars.GameAnimationUtil:playAnimation(lplr, bedwars.GameAnimationUtil:getAssetId(bedwars.AnimationType.BUILDER_HAMMER_HIT),{fadeInTime = 0.02})
+            bedwars.SoundManager:playSound(bedwars.SoundList.FORTIFY_BLOCK,lplr.Character.HumanoidRootPart.Position)
+        end
+
+        bedwars.Client:Get('FortifyBlock'):SendToServer(payload)
+    end
+
+    AutoBuilder = vape.Categories.Kits:CreateModule({
+        Name = 'AutoBuilder',
+        Function = function(state)
+            if not state then return end
+            repeat
+                task.wait()
+            until (store.matchState ~= 0 and store.equippedKit == 'builder') or not AutoBuilder.Enabled
+            if not AutoBuilder.Enabled then return end
+            local trackedBlocks = collection('block', AutoBuilder, function(list, obj)
+                task.defer(function()
+                    if obj
+                        and not obj:GetAttribute('NoBreak')
+                        and obj:GetAttribute('PlacedByUserId') then
+                        table.insert(list, obj)
+                    end
+                end)
+            end)
+            repeat
+                if entitylib.isAlive and getItem('hammer') then
+                    local root = entitylib.character.RootPart
+                    if not root then continue end
+                    local bed = findNearestBed(root.Position)
+                    for _, block in pairs(trackedBlocks) do
+                        if not block then continue end
+                        local name = block.Name
+                        if name:find('wool_') then
+                            name = 'wool'
+                        end
+                        if BedCheck.Enabled and bed then
+                            if (bed.Position - block.Position).Magnitude > 30 then
+                                continue
+                            end
+                        end
+                        if table.find(BlockBlacklist.ListEnabled, name) then
+                            continue
+                        end
+                        if block:FindFirstChild('BuilderFortify') then
+                            continue
+                        end
+                        if LimitMode.Enabled then
+                            local hammer = getItem('hammer')
+                            if hammer and store.hand.tool and store.hand.tool.Name == 'hammer' then
+                                fortifyBlock(({getPlacedBlock(block.Position)})[2], FXEnabled.Enabled)
+                            end
+                        else
+                            fortifyBlock(({getPlacedBlock(block.Position)})[2], FXEnabled.Enabled)
+                        end
+                    end
+                end
+
+                task.wait(0.1)
+            until not AutoBuilder.Enabled
+        end
+    })
+
+	BedCheck = AutoBuilder:CreateToggle({
+        Name = 'Bed Check',
+        Tooltip = 'Checks if the block is near your bed'
+    })
+    BlockBlacklist = AutoBuilder:CreateTextList({
+        Name = 'Blacklist',
+        Placeholder = 'block name',
+        Default = {'cannon', 'tnt'}
+    })
+    LimitMode = AutoBuilder:CreateToggle({
+        Name = 'Limits to item'
+    })
+    FXEnabled = AutoBuilder:CreateToggle({
+        Name = 'Animations & Sounds',
+        Tooltip = 'Enables visual/sound feedback'
+    })
+end)
