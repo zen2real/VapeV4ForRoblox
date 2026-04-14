@@ -42845,3 +42845,90 @@ run(function()
         end
     end)
 end)
+run(function()
+	local FrameBuffer
+	local Latency
+	local Rate
+	
+	local defaultFFlags = {
+		DFIntDebugDefaultTargetWorldStepsPerFrame = nil,
+		DFIntMaxMissedWorldStepsRemembered = nil,
+		DFIntWorldStepsOffsetAdjustRate = nil,
+		DFIntDebugSendDistInSteps = nil,
+		DFIntWorldStepMax = nil,
+		DFIntWarpFactor = nil
+	}
+	
+	local function captureDefaults()
+		for name, _ in pairs(defaultFFlags) do
+			local suc, val = pcall(function()
+				return getfflag(name)
+			end)
+			if suc then
+				defaultFFlags[name] = val
+			end
+		end
+	end
+	captureDefaults()
+	
+	local function restoreFFlags()
+		for name, val in pairs(defaultFFlags) do
+			if val then
+				pcall(function()
+					setfflag(name, val)
+				end)
+			end
+		end
+	end
+	
+	local function applyFFlags(latencyMs, rate)
+		rate = math.max(rate, 1)
+		local latency = latencyMs
+		if latency <= 1 then
+			latency = 1.5
+		end
+		
+		local OG = -2147483648
+		local NEW = OG * (latency / 1000)
+		local NEW2 = NEW * -1
+		local str = tostring(NEW)
+		local str2 = tostring(NEW2)
+		
+		pcall(function() setfflag('DFIntDebugDefaultTargetWorldStepsPerFrame', str) end)
+		pcall(function() setfflag('DFIntMaxMissedWorldStepsRemembered', str) end)
+		pcall(function() setfflag('DFIntWorldStepsOffsetAdjustRate', str2) end)
+		pcall(function() setfflag('DFIntDebugSendDistInSteps', str) end)
+		pcall(function() setfflag('DFIntWorldStepMax', str) end)
+		pcall(function() setfflag('DFIntWarpFactor', str2) end)
+	end
+	
+	FrameBuffer = vape.Categories.Blatant:CreateModule({
+		Name = 'FrameBuffer',
+		Function = function(callback)
+			if callback then
+				repeat
+					applyFFlags(Latency.Value, Rate.Value)
+					task.wait(1 / math.max(Rate.Value, 1))
+				until not FrameBuffer.Enabled
+				
+				restoreFFlags()
+			end
+		end,
+	})
+	
+	Latency = FrameBuffer:CreateSlider({
+		Name = "Latency",
+		Min = 0,
+		Max = 1000,
+		Default = 250,
+		Suffix = 'ms'
+	})
+	
+	Rate = FrameBuffer:CreateSlider({
+		Name = "Rate",
+		Min = 1,
+		Max = 360,
+		Default = 60,
+		Suffix = 'hz'
+	})
+end)
