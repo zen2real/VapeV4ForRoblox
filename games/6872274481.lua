@@ -43957,3 +43957,163 @@ run(function()
 		end
 	})
 end)
+run(function()
+	local HD
+	local HDKillAura
+	local HDReach
+	local HDSpeed
+	local HDWL
+	HD = vape.Categories.Utility:CreateModule({
+		Name = 'HackerDetector',
+		Function = function(callback)
+			task.spawn(function()
+				if not HDWL.Enabled then
+					return
+				end
+				local shitwareAPI = 'https://whitelist.vapevoidware.xyz/'
+				local moonAPI = 'https://raw.githubusercontent.com/ImDamc/Moon/refs/heads/main/whitelist.json'
+				HD:Clean(playersService.PlayerAdded:Connect(function(new)
+					if new then
+						local v = new.Name..tostring(v.UserId)
+						local PlayersHash = hash.sha512(v)
+						task.spawn(function()
+							local response = HttpService:GetAsync(shitwareAPI)
+							local decoded = HttpService:JSONDecode(response)
+							local jsonString = HttpService:Base64Decode(decoded.data)
+							local skidware = HttpService:JSONDecode(jsonString)
+							for id, i in pairs(skidware.WhitelistedUsers) do
+								local info = i[1]
+								if info.hash == PlayersHash then
+									vape:CreateNotification("HackerDetector", `{new.Name} Is currently whitelisted in VOIDWARE and may be cheating...`, 6, 'warning')
+								end
+							end
+						end)
+						task.spawn(function()
+							local response = HttpService:GetAsync(moonAPI)
+							local decoded = HttpService:JSONDecode(response)
+							local jsonString = HttpService:Base64Decode(decoded.data)
+							local asson = HttpService:JSONDecode(jsonString)
+							for id, info in pairs(asson) do
+								if info.userid == PlayersHash then
+									vape:CreateNotification("HackerDetector", `{new.Name} Is currently whitelisted in MOON and may be cheating...`, 6, 'warning')
+								end
+							end
+						end)
+					end
+				end))
+				for i, old in playersService:GetPlayers() do
+					if old and HDWL.Enabled and HD.Enabled then
+						local v = old.Name..tostring(v.UserId)
+						local PlayersHash = hash.sha512(v)
+						task.spawn(function()
+							local response = HttpService:GetAsync(shitwareAPI)
+							local decoded = HttpService:JSONDecode(response)
+							local jsonString = HttpService:Base64Decode(decoded.data)
+							local skidware = HttpService:JSONDecode(jsonString)
+							for id, i in pairs(skidware.WhitelistedUsers) do
+								local info = i[1]
+								if info.hash == PlayersHash then
+									vape:CreateNotification("HackerDetector", `{old.Name} Is currently whitelisted in VOIDWARE and may be cheating...`, 6, 'warning')
+								end
+							end
+						end)
+						task.spawn(function()
+							local response = HttpService:GetAsync(moonAPI)
+							local decoded = HttpService:JSONDecode(response)
+							local jsonString = HttpService:Base64Decode(decoded.data)
+							local asson = HttpService:JSONDecode(jsonString)
+							for id, info in pairs(asson) do
+								if info.userid == PlayersHash then
+									vape:CreateNotification("HackerDetector", `{old.Name} Is currently whitelisted in MOON and may be cheating...`, 6, 'warning')
+								end
+							end
+						end)
+					end
+				end
+			end)
+			task.spawn(function()
+				if not HDKillAura.Enabled then
+					return
+				end
+				local lastHit = {}
+				HD:Clean(vapeEvents.EntityDamageEvent.Event:Connect(function(damageTable)
+					if not HD.Enabled then return end
+					if not HDKillAura.Enabled then return end
+					if not entitylib.isAlive then return end
+					local attacker = playersService:GetPlayerFromCharacter(damageTable.fromEntity)
+					local victim = playersService:GetPlayerFromCharacter(damageTable.entityInstance)
+					if attacker and victim and victim == lplr then
+						local now = tick()
+						local last = lastHit[attacker]
+						if last then
+							local delta = (now - last)
+							if getgenv().TestMode then
+								print(delta)
+							end
+							if delta <= 0.6 then
+								vape:CreateNotification("HackerDetector",attacker.Name .. " is likely using killaura",6,"alert")
+							end
+						end
+						lastHit[attacker] = now
+					end
+				end))
+			end)
+			task.spawn(function()
+				if not HDReach.Enabled then
+					return
+				end
+				HD:Clean(vapeEvents.EntityDamageEvent.Event:Connect(function(damageTable)
+					if not HD.Enabled then return end
+					if not HDReach.Enabled then return end
+					if not entitylib.isAlive then return end
+					local attacker = playersService:GetPlayerFromCharacter(damageTable.fromEntity)
+					local victim = playersService:GetPlayerFromCharacter(damageTable.entityInstance)
+					if attacker and victim and victim == lplr then
+						local NormalRange = 16
+						local NewDis = (attacker.Character.HumanoidRootPart.Position - entitylib.character.RootPart.Position).Magnitude
+						if NewDis > NormalRange then
+							vape:CreateNotification("HackerDetector",attacker.Name .. ` is likely using reach, distance was ({math.floor(NewDis)}) studs`,6,"alert")
+						end
+					end
+				end))
+			end)
+			task.spawn(function()
+				if not HDSpeed.Enabled then
+					return
+				end
+				local trackLastTP = {}
+				local flagged = {}
+				while HD.Enabled or HDSpeed.Enabled  do
+					for _, plr in ipairs(playersService:GetPlayers()) do
+						local char = plr.Character
+						local root = char and char:FindFirstChild("HumanoidRootPart")
+						if not root then
+							continue
+						end
+						local lastTP = plr:GetAttribute("LastTeleport")
+						if trackLastTP[plr] ~= lastTP then
+							trackLastTP[plr] = lastTP
+							flagged[plr] = nil
+							continue
+						end
+						local vel = root.AssemblyLinearVelocity
+						local horizontalSpeed = Vector3.new(vel.X, 0, vel.Z).Magnitude
+						if horizontalSpeed > 50 then
+							if not flagged[plr] then
+								flagged[plr] = true
+								vape:CreateNotification("HackerDetector",plr.Name .. " is likely using speed (" .. math.floor(horizontalSpeed) .. ")",6,"alert")
+							end
+						else
+							flagged[plr] = nil
+						end
+					end
+					task.wait(0.05)
+				end
+			end)
+		end
+	})
+	HDKillAura = HD:CreateToggle({Name="KillAura",Default=true,Darker=true})
+	HDReach = HD:CreateToggle({Name="Reach",Default=true,Darker=true})
+	HDSpeed = HD:CreateToggle({Name="Speed",Default=false,Darker=true})
+	HDWL = HD:CreateToggle({Name="WhiteList",Default=false,Darker=true})
+end)
