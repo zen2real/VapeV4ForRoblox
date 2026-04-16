@@ -43828,89 +43828,132 @@ task.spawn(function()
         end
     end
 end)
-Run(function()
+run(function()
     local DamageAffect = {Enabled = false}
-    local ColorToggle
-    local ColorValue = Color3.fromRGB(255, 255, 255) -- Default White
+	local Color
     local connection
-    local Fonts
-    local customMSG
-    local DamageMessages = {
-        'ez!', 'Hit!', 'Smack!', 'Bang!', 'Boom!', 'Whoop!', 'Damage!',
-        '-9e9!', 'Whack!', 'Crash!', 'Slam!', 'Zap!', 'Snap!', 'Thump!',
-        'Ouch!', 'Crack!', 'Bam!', 'Clap!', 'Blitz!', 'Crunch!', 'Shatter!',
-        'Blast!', 'Womp!', 'Thunk!', 'Zing!', 'Rip!', 'Rattle!', 'Kaboom!',
-        'Wack!', 'Boomer!', 'Slammer!', 'Powee!', 'Zappp!', 'Thunker!',
-        'Rippler!', 'Bap!', 'Bomp!', 'Sock!', 'Chop!', 'Sting!', 'Slice!',
-        'Swipe!', 'Punch!', 'Tonk!', 'Bonk!', 'Jolt!', 'Spike!', 'Pierce!',
-        'Crush!', 'Bruise!', 'Ding!', 'Clang!', 'Crashhh!', 'Kablam!',
-        'Zapshot!', 'zenwear on top!'
-    }
-
-    local function randomizer(tbl)
-        if not typeof(tbl) == "table" then return end
-        local index = math.random(1,#tbl)
-        local value = tbl[index]
-        return value, index
-    end
-
-    local font = 'Arial'
-    
+	local Fonts
+	local customMSG
+	local DamageMessages = {
+		'ez!',
+		'nigger',
+		'Hit!',
+		'Smack!',
+		'Bang!',
+		'Boom!',
+		'Whoop!',
+		'Damage!',
+		'-9e9!',
+		'Whack!',
+		'Crash!',
+		'Slam!',
+		'Zap!',
+		'Snap!',
+		'Thump!',
+		'Ouch!',
+		'Crack!',
+		'Bam!',
+		'Clap!',
+		'Blitz!',
+		'Crunch!',
+		'Shatter!',
+		'Blast!',
+		'Womp!',
+		'Thunk!',
+		'Zing!',
+		'Rip!',
+		'Rattle!',
+		'Kaboom!',
+		'Wack!',
+		'Boomer!',
+		'Slammer!',
+		'Powee!',
+		'Zappp!',
+		'Thunker!',
+		'Rippler!',
+		'Bap!',
+		'Bomp!',
+		'Sock!',
+		'Chop!',
+		'Sting!',
+		'Slice!',
+		'Swipe!',
+		'Punch!',
+		'Tonk!',
+		'Bonk!',
+		'Jolt!',
+		'Spike!',
+		'Pierce!',
+		'Crush!',
+		'Bruise!',
+		'Ding!',
+	    'Clang!',
+		'Crashhh!',
+		'Kablam!',
+		'Zapshot!',
+		'zenwear on top!'
+	}
+	
+	local RGBColors = {
+		Color3.fromRGB(255, 0, 0),
+		Color3.fromRGB(255, 127, 0),
+		Color3.fromRGB(255, 255, 0),
+		Color3.fromRGB(0, 255, 0),
+		Color3.fromRGB(0, 0, 255),
+		Color3.fromRGB(75, 0, 130),
+		Color3.fromRGB(148, 0, 211)
+	}
+	
+	local function randomizer(tbl)
+	    if not typeof(tbl) == "table" then return end
+	    local index = math.random(1,#tbl)
+	    local value = tbl[index]
+	    return value,index
+	end
+	local font  = 'Arial'
     DamageAffect = vape.Categories.Render:CreateModule({
         Name = "DamageAffects",
         Function = function(call)
-            -- Permission Check
-            if role ~= "owner" and role ~= "coowner" and role ~= "admin" and role ~= "friend" and role ~= "premium" and role ~= "user" then
-                vape:CreateNotification("Onyx", "You don’t have access to this.", 10, "alert")
-                return
-            end  
+			if role ~= "owner" and role ~= "coowner" and role ~= "admin" and role ~= "friend" and role ~= "premium" and role ~= "user"then
+				vape:CreateNotification("Onyx", "You don’t have access to this.", 10, "alert")
+				return
+			end  
+			if call then
+				DamageAffect:Clean(workspace.DescendantAdded:Connect(function(part)
+				    if part.Name == "DamageIndicatorPart" and part:IsA("BasePart") then
+				        for i, v in part:GetDescendants() do
+				            if v:IsA("TextLabel") then
+				                local txt = randomizer(DamageMessages)
+				                local clr = randomizer(RGBColors)
+								if customMSG.Enabled then
+				                	v.Text = txt
+								end
+								if Color.Enabled then
+				              	  	v.TextColor3 = clr
+								end
+								v.FontFace = font
+				            end
+				        end
+				    end
+				end))
+			else
 
-            if call then
-                DamageAffect:Clean(workspace.DescendantAdded:Connect(function(part)
-                    if part.Name == "DamageIndicatorPart" and part:IsA("BasePart") then
-                        -- Small delay to ensure TextLabels are created/replicated
-                        task.wait() 
-                        for i, v in part:GetDescendants() do
-                            if v:IsA("TextLabel") then
-                                if customMSG.Enabled then
-                                    v.Text = randomizer(DamageMessages)
-                                end
-                                if ColorToggle.Enabled then
-                                    v.TextColor3 = ColorValue
-                                end
-                                v.FontFace = font
-                            end
-                        end
-                    end
-                end))
-            end
+			end
         end,
-        Tooltip = "Customizes Damage Effects"
+        Tooltip = "Customizes Damage Affects"
     })
-
-    customMSG = DamageAffect:CreateToggle({
-        Name = "Custom Messages",
-        Default = true
-    })
-
-    ColorToggle = DamageAffect:CreateToggle({
-        Name = "Custom Colors",
-        Default = true
-    })
-
-    -- This adds the color slider/picker to the toggle
-    ColorToggle:CreateColorPicker({
-        Name = "Indicator Color",
-        Default = Color3.fromRGB(255, 0, 0),
-        Function = function(val)
-            ColorValue = val
-        end
-    })
-
-    Fonts = DamageAffect:CreateFont({
-        Name = 'Font',
-        Function = function(val)
-            font = val
-        end
-    })
+	customMSG = DamageAffect:CreateToggle({
+		Name = "Custom Messages",
+		Default = true
+	})
+	Color = DamageAffect:CreateToggle({
+		Name = "Custom Colors",
+		Default = true
+	})
+	Fonts = DamageAffect:CreateFont({
+		Name = 'Font',
+		Function = function(val)
+			font = val
+		end
+	})
 end)
